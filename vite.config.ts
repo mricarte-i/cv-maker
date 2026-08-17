@@ -15,8 +15,19 @@ export default defineConfig({
         display: "standalone",
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,wasm,typ,otf,svg}"],
-        maximumFileSizeToCacheInBytes: 40 * 1024 * 1024, // 40 MB
+        globPatterns: ["**/*.{js,css,html,typ,otf,svg}"],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
+        runtimeCaching: [
+          {
+            urlPattern: /\.wasm$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "typst-wasm",
+              expiration: { maxEntries: 4 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,
