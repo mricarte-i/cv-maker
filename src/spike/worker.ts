@@ -11,10 +11,10 @@ import rendererWasm from "@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer
 import { CV_TYP } from "./fixtures";
 
 const FONTS = [
-  "/fonts/LibrerationSerif-Regular.ttf",
-  "/fonts/LibrerationSerif-Bold.ttf",
-  "/fonts/LibrerationSerif-BoldItalic.ttf",
-  "/fonts/LibrerationSerif-Italic.ttf",
+  "/fonts/LibertinusSerif-Regular.otf",
+  "/fonts/LibertinusSerif-Bold.otf",
+  "/fonts/LibertinusSerif-BoldItalic.otf",
+  "/fonts/LibertinusSerif-Italic.otf",
 ];
 
 const enc = new TextEncoder();

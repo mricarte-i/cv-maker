@@ -25,6 +25,9 @@ function App() {
       say(
         `compile ${r.compileMs.toFixed(0)} + render ${r.renderMs.toFixed(0)}ms`,
       );
+      if (r.diagnostics?.length) {
+        say(` warn: ${JSON.stringify(r.diagnostics)}`);
+      }
     } else {
       say(`ERROR ${JSON.stringify(r.diagnostics ?? r.error)}`);
     }
