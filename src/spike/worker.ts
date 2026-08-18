@@ -8,7 +8,7 @@ import { CompileFormatEnum } from "@myriaddreamin/typst.ts/compiler";
 
 import compilerWasm from "@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url";
 import rendererWasm from "@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url";
-import { CV_TYP } from "./fixtures";
+import cvTyp from "../typst/cv.typ?raw";
 
 const FONTS = [
   "/fonts/LibertinusSerif-Regular.otf",
@@ -39,7 +39,7 @@ async function init() {
   ]);
 
   compiler.addSource("/silver-dev-cv.typ", template);
-  compiler.addSource("/cv.typ", CV_TYP);
+  compiler.addSource("/cv.typ", cvTyp);
 
   return performance.now() - t0;
 }

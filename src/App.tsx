@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
+import contentEn from "../sample/content-en.json?raw";
 import { SAMPLE } from "./spike/fixtures";
 import { compileCv, initCompiler } from "./spike/client";
 
@@ -13,18 +14,18 @@ function App() {
     initCompiler().then((r) => say(`init ${r.initMs?.toFixed(0)}ms`));
   }, []);
 
-  async function run(label: string) {
+  async function run(label: string, json: string) {
     const id = ++seq.current;
-    const doc = { ...SAMPLE, name: `${SAMPLE.name} ${label}` };
-    const r = await compileCv(JSON.stringify(doc));
+    const r = await compileCv(json);
     if (id !== seq.current) {
       return;
     }
     if (r.ok) {
       setSvg(r.svg);
       say(
-        `compile ${r.compileMs.toFixed(0)} + render ${r.renderMs.toFixed(0)}ms`,
+        `${label}: compile ${r.compileMs.toFixed(0)} + render ${r.renderMs.toFixed(0)}ms`,
       );
+
       if (r.diagnostics?.length) {
         say(` warn: ${JSON.stringify(r.diagnostics)}`);
       }
@@ -38,7 +39,7 @@ function App() {
     // hot compile CVs??
     const t0 = performance.now();
     for (let i = 0; i < 50; i++) {
-      await run(`#${i}`);
+      await run(`#${i}`, contentEn);
     }
     say(`50x in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
   }
@@ -53,7 +54,10 @@ function App() {
           borderRight: "1px solid #ccc",
         }}
       >
-        <button onClick={() => run("once")}>compile</button>
+        <button onClick={() => run("parity", contentEn)}>parity</button>
+        <button onClick={() => run("adversarial", JSON.stringify(SAMPLE))}>
+          adversarial
+        </button>
         <button onClick={perfTest}>50x</button>
         <pre style={{ fontSize: 11, whiteSpace: "pre-wrap" }}>
           {log.join("\n")}
