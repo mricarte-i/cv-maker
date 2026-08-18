@@ -40,9 +40,16 @@ except `fixtures.ts`, whose adversarial `SAMPLE` is reusable for parity work.
 
 | Context | init | compile | render |
 |---|---|---|---|
-| dev, warm | 115-153 ms | 1-4 ms | 0-2 ms |
-| `preview` (prod), warm | 183 ms | 2-4 ms | 0-2 ms |
+| dev, warm - toy fixture (3 sections) | 115-153 ms | 1-4 ms | 0-2 ms |
+| `preview` (prod), warm - toy fixture | 183 ms | 2-4 ms | 0-2 ms |
+| **dev, warm - real fixture (6 sections)** | **119 ms** | **~20 ms** | **~3 ms** |
 | **cold - empty cache** | **not yet measured** | - | - |
+
+**Use the 20 ms number, not the 8 ms one.** 50x on `sample/content-en.json`
+takes 1.0 s, against 0.4 s for the 3-section spike fixture. That is content
+size, not drift - the per-compile cost is flat across iterations either way.
+A real CV with three jobs and ten bullets will land higher still, so treat
+~20 ms as the floor when sizing the M5 debounce, not the expected value.
 
 The cold number is the one input still missing. It decides section 6's question
 of whether the loading state needs to be a real skeleton or just a spinner.
@@ -115,17 +122,22 @@ not on bullet strings (those get move up/down, where index keys are safe).
 Schemas are not `strictObject` — unknown keys get stripped, so a document from a
 future version degrades instead of failing to load.
 
-## Milestone 4 — `cv.typ` adapter 🚧
+## Milestone 4 — `cv.typ` adapter ✅
 
-`src/typst/cv.typ` — written and committed, **not yet verified.**
+`src/typst/cv.typ` — written, committed, and verified against the reference PDF.
 
 - [x] One generic loop over `t.sections` — any sections, any labels, any order
 - [x] Entry branch on `variant` (see below)
 - [x] Empty-field handling
-- [ ] **Visual parity vs `sample/cv-en.pdf`** — needs a `content.json` built
-      from `sample/content-en.typ`, then a page-by-page diff
+- [x] **Visual parity vs `sample/cv-en.pdf`** ✅ — `sample/content-en.json` is the
+      fixture (six sections, every item kind, both block kinds). Still one page;
+      bullet indentation and both `h(1fr)` alignments match. The only known
+      divergence is `sectionsep` placement, below - 1pt across the document.
 - [ ] **Re-run the adversarial `SAMPLE`** through the new adapter (`render-blocks`
-      is new code between the JSON and the template)
+      is new code between the JSON and the template). One button click in the
+      spike App; not yet done.
+- [ ] **Exercise the blank-location education branch** — `content-en.json` has a
+      non-empty location, so the inlined dangling-comma path is still untested.
 
 ### Open Q1 resolved — and the plan's leaning was wrong
 
@@ -148,7 +160,7 @@ lays the same four fields out differently:
 Note `date` moves between top-right and bottom-right, and `location` is merged
 into the title for education and dropped entirely for project.
 
-**plan.md section 3 still says to prefer `twoline-item` and needs correcting.**
+Corrected in plan.md revision 3, section 3.
 
 ### Edge cases handled in the adapter
 
@@ -163,14 +175,26 @@ into the title for education and dropped entirely for project.
 - `render-blocks` skips empty paragraphs and empty bullet lists entirely.
   Consequence for the UI: a freshly added empty bullet shows nothing in the
   preview until a character is typed. Revisit when the editor exists.
+- **`sectionsep` placement differs from `sample/cv.typ` by design.** The sample
+  emits it *before* each section and skips it between Experience and Skills;
+  the adapter emits it *after* every section, including a trailing one. That is
+  two extra `v(0.5pt)` across the whole document. Sub-pixel, deliberately not
+  chased - a generic loop cannot reproduce a hand-placed omission.
 
 ---
 
-## Milestone 5 — Compile layer
+## Milestone 5 — Compile layer 🚧
 
-- [ ] Worker with one long-lived compiler + renderer (productionize the spike)
-- [ ] Debounce ~250 ms + monotonic-id supersession
-- [ ] `diagnostics: 'full'` surfaced; last good preview survives errors
+Less remains here than it looks. The worker already works and supersession
+already exists as the `seq` ref in `App.tsx`; what is missing is a hook, so
+that every editor built in M6 is visible in the preview instead of written
+blind.
+
+- [ ] Promote the spike: `src/spike/{worker,client}.ts` → `src/typst/`
+- [ ] `useCompiledCv(doc)` → `{ svg, diagnostics, pending }` — debounce and
+      supersession move out of `App.tsx` and into the hook
+- [ ] Last good SVG survives a failed compile
+- [ ] Delete `src/spike/` once the adversarial fixture has been re-run
 
 ## Milestone 6 — UI
 
@@ -209,5 +233,5 @@ into the title for education and dropped entirely for project.
 | 1 | `entry.variant` rendering | M4 | ✅ **resolved** — branch to `job`/`education`/`project`, not `twoline-item` |
 | 2 | Multi-language | — | leaning separate documents; `sys.inputs` available either way |
 | 3 | Multiple CVs vs one | M7 | open |
-| 4 | Section labels free text or preset | M6 | leaning preset + editable |
+| 4 | Section labels free text or preset | M6 | ✅ **resolved** — free text |
 | 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip); phone untested |

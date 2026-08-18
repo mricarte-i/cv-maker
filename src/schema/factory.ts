@@ -1,4 +1,11 @@
-import { SCHEMA_VERSION, type Block, type Item, type CVDocument } from "./cv";
+import {
+  SCHEMA_VERSION,
+  type Block,
+  type Item,
+  type CVDocument,
+  type Section,
+  type Contact,
+} from "./cv";
 
 export const newId = () => crypto.randomUUID();
 
@@ -35,4 +42,22 @@ export const emptyDocument = (): CVDocument => ({
   date: new Date().toISOString().slice(0, 10),
   contacts: [],
   sections: [{ id: newId(), label: "About", items: [emptyItem("prose")] }],
+});
+
+export const emptyBullets = (): Block => ({
+  kind: "bullets",
+  id: newId(),
+  items: [""],
+});
+
+export const emptyContact = (): Contact => ({
+  id: newId(),
+  text: "",
+  link: "",
+});
+
+export const emptySection = (): Section => ({
+  id: newId(),
+  label: "",
+  items: [],
 });

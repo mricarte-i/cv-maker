@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { id } from "zod/v4/locales";
 
 export const SCHEMA_VERSION = 1;
+
+const id = () => z.string().min(1);
 
 export const BlockSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("paragraph"), id: id(), text: z.string() }),

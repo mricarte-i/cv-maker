@@ -8,7 +8,7 @@ import { CompileFormatEnum } from "@myriaddreamin/typst.ts/compiler";
 
 import compilerWasm from "@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url";
 import rendererWasm from "@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url";
-import cvTyp from "../typst/cv.typ?raw";
+import cvTyp from "./cv.typ?raw";
 
 const FONTS = [
   "/fonts/LibertinusSerif-Regular.otf",
@@ -57,7 +57,7 @@ async function compile(json: string) {
   if (!result) {
     return {
       ok: false as const,
-      diagnostics,
+      diagnostics: diagnostics ?? [],
       compileMs,
       renderMs: 0,
     };
@@ -71,7 +71,7 @@ async function compile(json: string) {
 
   return {
     ok: true as const,
-    diagnostics,
+    diagnostics: diagnostics ?? [],
     compileMs,
     renderMs: performance.now() - t1,
     svg,
