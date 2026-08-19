@@ -7,13 +7,7 @@ import {
   emptyParagraph,
   emptySection,
 } from "../schema/factory";
-
-export type ListRef =
-  | { kind: "contacts" }
-  | { kind: "sections" }
-  | { kind: "items"; sectionId: string }
-  | { kind: "blocks"; itemId: string }
-  | { kind: "bullets"; blockId: string };
+import { block, item, list, section, type ListRef } from "./navigate";
 
 export type Action =
   | { type: "doc/replace"; doc: CVDocument }
@@ -48,52 +42,6 @@ export type Action =
   | { type: "paragraph/update"; id: string; text: string }
   | { type: "bullet/update"; blockId: string; index: number; text: string };
 
-const section = (doc: Draft<CVDocument>, id: string) =>
-  doc.sections.find((s) => s.id === id);
-
-const item = (doc: Draft<CVDocument>, id: string) => {
-  for (const s of doc.sections) {
-    const it = s.items.find((i) => i.id === id);
-    if (it) {
-      return it;
-    }
-  }
-};
-
-const block = (doc: Draft<CVDocument>, id: string) => {
-  for (const s of doc.sections) {
-    for (const it of s.items) {
-      if (it.kind === "oneline") {
-        continue;
-      }
-      const b = it.body.find((x) => x.id === id);
-      if (b) {
-        return b;
-      }
-    }
-  }
-};
-
-/** element type is deliberately erased: move/remove don't care what's in the list */
-const list = (doc: Draft<CVDocument>, ref: ListRef): unknown[] | undefined => {
-  switch (ref.kind) {
-    case "contacts":
-      return doc.contacts;
-    case "sections":
-      return doc.sections;
-    case "items":
-      return section(doc, ref.sectionId)?.items;
-    case "blocks": {
-      const it = item(doc, ref.itemId);
-      return it && it.kind !== "oneline" ? it.body : undefined;
-    }
-    case "bullets": {
-      const b = block(doc, ref.blockId);
-      return b?.kind === "bullets" ? b.items : undefined;
-    }
-  }
-};
-
 const edit = produce(
   (doc: Draft<CVDocument>, a: Exclude<Action, { type: "doc/replace" }>) => {
     switch (a.type) {
@@ -105,9 +53,12 @@ const edit = produce(
         break;
       case "list/move": {
         const l = list(doc, a.list);
-        if (!l || a.from === a.to) break;
-        if (a.from < 0 || a.to < 0 || a.from >= l.length || a.to >= l.length)
+        if (!l || a.from === a.to) {
           break;
+        }
+        if (a.from < 0 || a.to < 0 || a.from >= l.length || a.to >= l.length) {
+          break;
+        }
         l.splice(a.to, 0, ...l.splice(a.from, 1));
         break;
       }
