@@ -1,4 +1,5 @@
-import type { Block, CVDocument, Contact, Item } from "../schema/cv";
+import { produce, type Draft } from "immer";
+import type { Block, Contact, CVDocument, Item } from "../schema/cv";
 import {
   emptyBullets,
   emptyContact,
@@ -7,20 +8,31 @@ import {
   emptySection,
 } from "../schema/factory";
 
+export type ListRef =
+  | { kind: "contacts" }
+  | { kind: "sections" }
+  | { kind: "items"; sectionId: string }
+  | { kind: "blocks"; itemId: string }
+  | { kind: "bullets"; blockId: string };
+
 export type Action =
   | { type: "doc/replace"; doc: CVDocument }
   | { type: "doc/set"; field: "name" | "address" | "date"; value: string }
+
+  // uniform — any list, any depth
+  | { type: "list/remove"; list: ListRef; index: number }
+  | { type: "list/move"; list: ListRef; from: number; to: number }
+
+  // adds: each needs a different factory
   | { type: "contact/add" }
-  | { type: "contact/update"; id: string; patch: Partial<Omit<Contact, "id">> }
-  | { type: "contact/remove"; id: string }
-  | { type: "contact/move"; from: number; to: number }
   | { type: "section/add" }
-  | { type: "section/label"; id: string; label: string }
-  | { type: "section/remove"; id: string }
-  | { type: "section/move"; from: number; to: number }
   | { type: "item/add"; sectionId: string; kind: Item["kind"] }
-  | { type: "item/remove"; sectionId: string; id: string }
-  | { type: "item/move"; sectionId: string; from: number; to: number }
+  | { type: "block/add"; itemId: string; kind: Block["kind"] }
+  | { type: "bullet/add"; blockId: string }
+
+  // patches: each carries a different shape
+  | { type: "contact/update"; id: string; patch: Partial<Omit<Contact, "id">> }
+  | { type: "section/update"; id: string; label: string }
   | {
       type: "entry/update";
       id: string;
@@ -33,161 +45,146 @@ export type Action =
       id: string;
       patch: Partial<Omit<Extract<Item, { kind: "oneline" }>, "kind" | "id">>;
     }
-  | { type: "block/add"; itemId: string; kind: Block["kind"] }
-  | { type: "block/remove"; itemId: string; id: string }
-  | { type: "block/move"; itemId: string; from: number; to: number }
   | { type: "paragraph/update"; id: string; text: string }
-  | { type: "bullet/add"; blockId: string }
-  | { type: "bullet/update"; blockId: string; index: number; text: string }
-  | { type: "bullet/remove"; blockId: string; index: number }
-  | { type: "bullet/move"; blockId: string; from: number; to: number };
+  | { type: "bullet/update"; blockId: string; index: number; text: string };
 
-const move = <T>(arr: T[], from: number, to: number): T[] => {
-  if (from === to) return arr;
-  if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
-  const next = arr.slice();
-  next.splice(to, 0, next.splice(from, 1)[0]);
-  return next;
+const section = (doc: Draft<CVDocument>, id: string) =>
+  doc.sections.find((s) => s.id === id);
+
+const item = (doc: Draft<CVDocument>, id: string) => {
+  for (const s of doc.sections) {
+    const it = s.items.find((i) => i.id === id);
+    if (it) {
+      return it;
+    }
+  }
 };
 
-const byId = <T extends { id: string }>(
-  arr: T[],
-  id: string,
-  fn: (x: T) => T,
-): T[] => arr.map((x) => (x.id === id ? fn(x) : x));
-
-/** items of one section */
-const mapItems = (
-  doc: CVDocument,
-  sectionId: string,
-  fn: (items: Item[]) => Item[],
-): CVDocument => ({
-  ...doc,
-  sections: byId(doc.sections, sectionId, (s) => ({
-    ...s,
-    items: fn(s.items),
-  })),
-});
-
-/** any item, anywhere */
-const mapItem = (
-  doc: CVDocument,
-  id: string,
-  fn: (it: Item) => Item,
-): CVDocument => ({
-  ...doc,
-  sections: doc.sections.map((s) => ({ ...s, items: byId(s.items, id, fn) })),
-});
-
-/** body of any item that has one (entry | prose) */
-const mapBody = (
-  doc: CVDocument,
-  itemId: string,
-  fn: (bs: Block[]) => Block[],
-): CVDocument =>
-  mapItem(doc, itemId, (it) =>
-    it.kind === "oneline" ? it : { ...it, body: fn(it.body) },
-  );
-
-/** any block, anywhere */
-const mapBlock = (
-  doc: CVDocument,
-  id: string,
-  fn: (b: Block) => Block,
-): CVDocument => ({
-  ...doc,
-  sections: doc.sections.map((s) => ({
-    ...s,
-    items: s.items.map((it) =>
-      it.kind === "oneline" ? it : { ...it, body: byId(it.body, id, fn) },
-    ),
-  })),
-});
-
-export function reducer(doc: CVDocument, a: Action): CVDocument {
-  switch (a.type) {
-    case "doc/replace":
-      return a.doc;
-    case "doc/set":
-      return { ...doc, [a.field]: a.value };
-
-    case "contact/add":
-      return { ...doc, contacts: [...doc.contacts, emptyContact()] };
-    case "contact/update":
-      return {
-        ...doc,
-        contacts: byId(doc.contacts, a.id, (c) => ({ ...c, ...a.patch })),
-      };
-    case "contact/remove":
-      return { ...doc, contacts: doc.contacts.filter((c) => c.id !== a.id) };
-    case "contact/move":
-      return { ...doc, contacts: move(doc.contacts, a.from, a.to) };
-
-    case "section/add":
-      return { ...doc, sections: [...doc.sections, emptySection()] };
-    case "section/label":
-      return {
-        ...doc,
-        sections: byId(doc.sections, a.id, (s) => ({ ...s, label: a.label })),
-      };
-    case "section/remove":
-      return { ...doc, sections: doc.sections.filter((s) => s.id !== a.id) };
-    case "section/move":
-      return { ...doc, sections: move(doc.sections, a.from, a.to) };
-
-    case "item/add":
-      return mapItems(doc, a.sectionId, (items) => [
-        ...items,
-        emptyItem(a.kind),
-      ]);
-    case "item/remove":
-      return mapItems(doc, a.sectionId, (items) =>
-        items.filter((it) => it.id !== a.id),
-      );
-    case "item/move":
-      return mapItems(doc, a.sectionId, (items) => move(items, a.from, a.to));
-    case "entry/update":
-      return mapItem(doc, a.id, (it) =>
-        it.kind === "entry" ? { ...it, ...a.patch } : it,
-      );
-    case "oneline/update":
-      return mapItem(doc, a.id, (it) =>
-        it.kind === "oneline" ? { ...it, ...a.patch } : it,
-      );
-
-    case "block/add":
-      return mapBody(doc, a.itemId, (bs) => [
-        ...bs,
-        a.kind === "bullets" ? emptyBullets() : emptyParagraph(),
-      ]);
-    case "block/remove":
-      return mapBody(doc, a.itemId, (bs) => bs.filter((b) => b.id !== a.id));
-    case "block/move":
-      return mapBody(doc, a.itemId, (bs) => move(bs, a.from, a.to));
-    case "paragraph/update":
-      return mapBlock(doc, a.id, (b) =>
-        b.kind === "paragraph" ? { ...b, text: a.text } : b,
-      );
-
-    case "bullet/add":
-      return mapBlock(doc, a.blockId, (b) =>
-        b.kind === "bullets" ? { ...b, items: [...b.items, ""] } : b,
-      );
-    case "bullet/update":
-      return mapBlock(doc, a.blockId, (b) =>
-        b.kind === "bullets"
-          ? { ...b, items: b.items.map((t, i) => (i === a.index ? a.text : t)) }
-          : b,
-      );
-    case "bullet/remove":
-      return mapBlock(doc, a.blockId, (b) =>
-        b.kind === "bullets"
-          ? { ...b, items: b.items.filter((_, i) => i !== a.index) }
-          : b,
-      );
-    case "bullet/move":
-      return mapBlock(doc, a.blockId, (b) =>
-        b.kind === "bullets" ? { ...b, items: move(b.items, a.from, a.to) } : b,
-      );
+const block = (doc: Draft<CVDocument>, id: string) => {
+  for (const s of doc.sections) {
+    for (const it of s.items) {
+      if (it.kind === "oneline") {
+        continue;
+      }
+      const b = it.body.find((x) => x.id === id);
+      if (b) {
+        return b;
+      }
+    }
   }
-}
+};
+
+/** element type is deliberately erased: move/remove don't care what's in the list */
+const list = (doc: Draft<CVDocument>, ref: ListRef): unknown[] | undefined => {
+  switch (ref.kind) {
+    case "contacts":
+      return doc.contacts;
+    case "sections":
+      return doc.sections;
+    case "items":
+      return section(doc, ref.sectionId)?.items;
+    case "blocks": {
+      const it = item(doc, ref.itemId);
+      return it && it.kind !== "oneline" ? it.body : undefined;
+    }
+    case "bullets": {
+      const b = block(doc, ref.blockId);
+      return b?.kind === "bullets" ? b.items : undefined;
+    }
+  }
+};
+
+const edit = produce(
+  (doc: Draft<CVDocument>, a: Exclude<Action, { type: "doc/replace" }>) => {
+    switch (a.type) {
+      case "doc/set":
+        doc[a.field] = a.value;
+        break;
+      case "list/remove":
+        list(doc, a.list)?.splice(a.index, 1);
+        break;
+      case "list/move": {
+        const l = list(doc, a.list);
+        if (!l || a.from === a.to) break;
+        if (a.from < 0 || a.to < 0 || a.from >= l.length || a.to >= l.length)
+          break;
+        l.splice(a.to, 0, ...l.splice(a.from, 1));
+        break;
+      }
+      // adds resolve their list directly — pushing through `unknown[]` would let
+      // an emptyContact() land in doc.sections without a complaint
+      case "contact/add":
+        doc.contacts.push(emptyContact());
+        break;
+      case "section/add":
+        doc.sections.push(emptySection());
+        break;
+      case "item/add":
+        section(doc, a.sectionId)?.items.push(emptyItem(a.kind));
+        break;
+      case "block/add": {
+        const it = item(doc, a.itemId);
+        if (it && it.kind !== "oneline") {
+          it.body.push(
+            a.kind === "bullets" ? emptyBullets() : emptyParagraph(),
+          );
+        }
+        break;
+      }
+      case "bullet/add": {
+        const b = block(doc, a.blockId);
+        if (b?.kind === "bullets") {
+          b.items.push("");
+        }
+        break;
+      }
+      case "contact/update": {
+        const c = doc.contacts.find((c) => c.id === a.id);
+        if (c) {
+          Object.assign(c, a.patch);
+        }
+        break;
+      }
+      case "section/update": {
+        const s = section(doc, a.id);
+        if (s) {
+          s.label = a.label;
+        }
+        break;
+      }
+      case "entry/update": {
+        const it = item(doc, a.id);
+        if (it?.kind === "entry") {
+          Object.assign(it, a.patch);
+        }
+        break;
+      }
+      case "oneline/update": {
+        const it = item(doc, a.id);
+        if (it?.kind === "oneline") {
+          Object.assign(it, a.patch);
+        }
+        break;
+      }
+      case "paragraph/update": {
+        const b = block(doc, a.id);
+        if (b?.kind === "paragraph") {
+          b.text = a.text;
+        }
+        break;
+      }
+      case "bullet/update": {
+        const b = block(doc, a.blockId);
+        if (b?.kind === "bullets") {
+          b.items[a.index] = a.text;
+        }
+        break;
+      }
+      default:
+        a satisfies never;
+    }
+  },
+);
+
+export const reducer = (doc: CVDocument, a: Action): CVDocument =>
+  a.type === "doc/replace" ? a.doc : edit(doc, a);

@@ -26,6 +26,9 @@ importers:
       '@myriaddreamin/typst.ts':
         specifier: ^0.7.0
         version: 0.7.0(@myriaddreamin/typst-ts-renderer@0.7.0)(@myriaddreamin/typst-ts-web-compiler@0.7.0)
+      immer:
+        specifier: ^11.1.17
+        version: 11.1.17
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -1377,6 +1380,9 @@ packages:
 
   idb@7.1.1:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
+
+  immer@11.1.17:
+    resolution: {integrity: sha512-8Vu44Y0MuMBlTQz/jQ8HEMYNq/bBqk87MnBwYR5mC8AthfhEXidZ5aT/oA/CUqboa8THKltnD9L3xyqhU/Sy1Q==}
 
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
@@ -3472,6 +3478,8 @@ snapshots:
       function-bind: 1.1.2
 
   idb@7.1.1: {}
+
+  immer@11.1.17: {}
 
   internal-slot@1.1.0:
     dependencies:
