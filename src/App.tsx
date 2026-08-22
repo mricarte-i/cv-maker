@@ -1,8 +1,11 @@
 import { useReducer } from "react";
+import { useDefaultLayout } from "react-resizable-panels";
+
 import contentEn from "../sample/content-en.json?raw";
 import { parseDocument } from "./schema/parse";
 import { emptyDocument } from "./schema/factory";
 import type { CVDocument } from "./schema/cv";
+import { loadDoc, useAutosave } from "./state/persist";
 import { reducer } from "./state/reducer";
 import { useCompiledCV } from "./typst/useCompiledCV";
 import { DispatchCtx } from "./ui/dispatch";
@@ -15,14 +18,17 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "./components/ui/resizable";
-import { useDefaultLayout } from "react-resizable-panels";
 
-// temporary: seed from the parity fixture so there is something to look at
-// before the editors exist. Swap for emptyDocument() once M7 loads from storage.
 function initialDoc(): CVDocument {
+  const saved = loadDoc();
+  if (saved) {
+    return saved;
+  }
+
+  // fallback on no saved document
   const r = parseDocument(JSON.parse(contentEn));
   if (!r.ok) {
-    console.error(r.error);
+    console.warn(`sample document rejected:\n${r.error}`);
     return emptyDocument();
   }
   return r.doc;
@@ -32,6 +38,7 @@ const FIELDS = ["name", "address", "date"] as const;
 
 function App() {
   const [doc, dispatch] = useReducer(reducer, undefined, initialDoc);
+  useAutosave(doc);
   const { svg, error, pending, ready } = useCompiledCV(doc);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "cv-maker-panels",
