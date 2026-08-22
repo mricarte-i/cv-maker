@@ -1,7 +1,10 @@
+import { Button } from "@/components/ui/button";
 import type { Block } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 import { ListControls } from "./ListControls";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export function BlockEditor({
   block,
@@ -21,7 +24,7 @@ export function BlockEditor({
       <ListControls list={parent} index={index} length={length} />
 
       {block.kind === "paragraph" ? (
-        <textarea
+        <Textarea
           rows={3}
           style={{ width: "100%" }}
           value={block.text}
@@ -37,7 +40,7 @@ export function BlockEditor({
         <>
           {block.items.map((text, i) => (
             <div key={i} style={{ display: "flex", gap: 4 }}>
-              <input
+              <Input
                 style={{ flex: 1 }}
                 value={text}
                 onChange={(e) =>
@@ -56,11 +59,11 @@ export function BlockEditor({
               />
             </div>
           ))}
-          <button
+          <Button
             onClick={() => dispatch({ type: "bullet/add", blockId: block.id })}
           >
             + bullet
-          </button>
+          </Button>
         </>
       )}
     </div>

@@ -1,5 +1,4 @@
 import { useReducer } from "react";
-import "./App.css";
 import contentEn from "../sample/content-en.json?raw";
 import { parseDocument } from "./schema/parse";
 import { emptyDocument } from "./schema/factory";
@@ -8,6 +7,9 @@ import { reducer } from "./state/reducer";
 import { useCompiledCV } from "./typst/useCompiledCV";
 import { DispatchCtx } from "./ui/dispatch";
 import { SectionEditor } from "./ui/SectionEditor";
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
 
 // temporary: seed from the parity fixture so there is something to look at
 // before the editors exist. Swap for emptyDocument() once M7 loads from storage.
@@ -40,15 +42,15 @@ function App() {
           }}
         >
           {FIELDS.map((field) => (
-            <label key={field} style={{ display: "block", marginBottom: 4 }}>
+            <Label key={field} style={{ display: "block", marginBottom: 4 }}>
               {field}{" "}
-              <input
+              <Input
                 value={doc[field]}
                 onChange={(e) =>
                   dispatch({ type: "doc/set", field, value: e.target.value })
                 }
               />
-            </label>
+            </Label>
           ))}
 
           <hr />
@@ -62,9 +64,9 @@ function App() {
             />
           ))}
 
-          <button onClick={() => dispatch({ type: "section/add" })}>
+          <Button onClick={() => dispatch({ type: "section/add" })}>
             + section
-          </button>
+          </Button>
 
           <p style={{ fontSize: 11, color: "#666" }}>
             {!ready

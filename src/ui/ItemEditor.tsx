@@ -3,6 +3,15 @@ import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 import { ListControls } from "./ListControls";
 import { BlockEditor } from "./BlockEditor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /** which fields each variant actually renders — see plan.md §3 */
 const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
@@ -25,18 +34,18 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
           length={body.length}
         />
       ))}
-      <button
+      <Button
         onClick={() =>
           dispatch({ type: "block/add", itemId, kind: "paragraph" })
         }
       >
         + paragraph
-      </button>
-      <button
+      </Button>
+      <Button
         onClick={() => dispatch({ type: "block/add", itemId, kind: "bullets" })}
       >
         + bullets
-      </button>
+      </Button>
     </>
   );
 }
@@ -68,7 +77,7 @@ export function ItemEditor({
       return (
         <div style={{ marginBottom: 10, display: "flex", gap: 4 }}>
           {controls}
-          <input
+          <Input
             placeholder="title"
             value={item.title}
             onChange={(e) =>
@@ -79,7 +88,7 @@ export function ItemEditor({
               })
             }
           />
-          <input
+          <Input
             style={{ flex: 1 }}
             placeholder="content"
             value={item.content}
@@ -107,33 +116,40 @@ export function ItemEditor({
       return (
         <div style={{ marginBottom: 10 }}>
           {controls}
-          <select
+          <Select
             value={item.variant}
-            onChange={(e) => set({ variant: e.target.value as EntryVariant })}
+            onValueChange={(v) => set({ variant: v as EntryVariant })}
           >
-            <option value="job">job</option>
-            <option value="education">education</option>
-            <option value="project">project</option>
-          </select>
-          <input
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(["job", "education", "project"] as const).map((v) => (
+                <SelectItem key={v} value={v}>
+                  {v}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
             placeholder="title"
             value={item.title}
             onChange={(e) => set({ title: e.target.value })}
           />
-          <input
+          <Input
             placeholder="date"
             value={item.date}
             onChange={(e) => set({ date: e.target.value })}
           />
           {uses.includes("subtitle") && (
-            <input
+            <Input
               placeholder="subtitle"
               value={item.subtitle}
               onChange={(e) => set({ subtitle: e.target.value })}
             />
           )}
           {uses.includes("location") && (
-            <input
+            <Input
               placeholder="location"
               value={item.location}
               onChange={(e) => set({ location: e.target.value })}

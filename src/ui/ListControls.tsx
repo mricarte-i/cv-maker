@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 
@@ -13,25 +14,25 @@ export function ListControls({
   const dispatch = useDispatch();
   return (
     <span style={{ whiteSpace: "nowrap" }}>
-      <button
+      <Button
         disabled={index === 0}
         onClick={() =>
           dispatch({ type: "list/move", list, from: index, to: index - 1 })
         }
       >
         ↑
-      </button>
-      <button
+      </Button>
+      <Button
         disabled={index === length - 1}
         onClick={() =>
           dispatch({ type: "list/move", list, from: index, to: index + 1 })
         }
       >
         ↓
-      </button>
-      <button onClick={() => dispatch({ type: "list/remove", list, index })}>
+      </Button>
+      <Button onClick={() => dispatch({ type: "list/remove", list, index })}>
         ×
-      </button>
+      </Button>
     </span>
   );
 }

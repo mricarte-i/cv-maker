@@ -3,6 +3,9 @@ import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 import { ListControls } from "./ListControls";
 import { ItemEditor } from "./ItemEditor";
+import { Button } from "../components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader } from "@/components/ui/card";
 
 export function SectionEditor({
   section,
@@ -17,9 +20,9 @@ export function SectionEditor({
   const items: ListRef = { kind: "items", sectionId: section.id };
 
   return (
-    <fieldset style={{ marginBottom: 12 }}>
-      <legend style={{ display: "flex", gap: 4 }}>
-        <input
+    <Card style={{ marginBottom: 12 }}>
+      <CardHeader style={{ display: "flex", gap: 4 }}>
+        <Input
           placeholder="section label"
           value={section.label}
           onChange={(e) =>
@@ -35,7 +38,7 @@ export function SectionEditor({
           index={index}
           length={length}
         />
-      </legend>
+      </CardHeader>
 
       {section.items.map((it, i) => (
         <ItemEditor
@@ -48,15 +51,15 @@ export function SectionEditor({
       ))}
 
       {(["entry", "oneline", "prose"] as const).map((kind) => (
-        <button
+        <Button
           key={kind}
           onClick={() =>
             dispatch({ type: "item/add", sectionId: section.id, kind })
           }
         >
           + {kind}
-        </button>
+        </Button>
       ))}
-    </fieldset>
+    </Card>
   );
 }
