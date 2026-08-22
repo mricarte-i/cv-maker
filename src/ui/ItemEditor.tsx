@@ -1,5 +1,6 @@
 import type { Block, EntryVariant, Item } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
+import type { EntryPatch } from "../state/reducer";
 import { useDispatch } from "./dispatch";
 import { ListControls } from "./ListControls";
 import { BlockEditor } from "./BlockEditor";
@@ -23,8 +24,9 @@ const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
 function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
   const dispatch = useDispatch();
   const parent: ListRef = { kind: "blocks", itemId };
+
   return (
-    <>
+    <div className="space-y-2">
       {body.map((b, i) => (
         <BlockEditor
           key={b.id}
@@ -34,19 +36,47 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
           length={body.length}
         />
       ))}
-      <Button
-        onClick={() =>
-          dispatch({ type: "block/add", itemId, kind: "paragraph" })
-        }
-      >
-        + paragraph
-      </Button>
-      <Button
-        onClick={() => dispatch({ type: "block/add", itemId, kind: "bullets" })}
-      >
-        + bullets
-      </Button>
-    </>
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() =>
+            dispatch({ type: "block/add", itemId, kind: "paragraph" })
+          }
+        >
+          + paragraph
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() =>
+            dispatch({ type: "block/add", itemId, kind: "bullets" })
+          }
+        >
+          + bullets
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** every item kind gets the same frame: controls on the left, fields on the right */
+function Shell({
+  parent,
+  index,
+  length,
+  children,
+}: {
+  parent: ListRef;
+  index: number;
+  length: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex gap-2 rounded-md border p-2">
+      <ListControls list={parent} index={index} length={length} />
+      <div className="min-w-0 flex-1 space-y-2">{children}</div>
+    </div>
   );
 }
 
@@ -62,65 +92,60 @@ export function ItemEditor({
   length: number;
 }) {
   const dispatch = useDispatch();
-  const controls = <ListControls list={parent} index={index} length={length} />;
+  const frame = { parent, index, length };
 
   switch (item.kind) {
     case "prose":
       return (
-        <div style={{ marginBottom: 10 }}>
-          {controls}
+        <Shell {...frame}>
           <BodyEditor itemId={item.id} body={item.body} />
-        </div>
+        </Shell>
       );
 
     case "oneline":
       return (
-        <div style={{ marginBottom: 10, display: "flex", gap: 4 }}>
-          {controls}
-          <Input
-            placeholder="title"
-            value={item.title}
-            onChange={(e) =>
-              dispatch({
-                type: "oneline/update",
-                id: item.id,
-                patch: { title: e.target.value },
-              })
-            }
-          />
-          <Input
-            style={{ flex: 1 }}
-            placeholder="content"
-            value={item.content}
-            onChange={(e) =>
-              dispatch({
-                type: "oneline/update",
-                id: item.id,
-                patch: { content: e.target.value },
-              })
-            }
-          />
-        </div>
+        <Shell {...frame}>
+          <div className="flex gap-2">
+            <Input
+              className="w-40"
+              placeholder="title"
+              value={item.title}
+              onChange={(e) =>
+                dispatch({
+                  type: "oneline/update",
+                  id: item.id,
+                  patch: { title: e.target.value },
+                })
+              }
+            />
+            <Input
+              className="flex-1"
+              placeholder="content"
+              value={item.content}
+              onChange={(e) =>
+                dispatch({
+                  type: "oneline/update",
+                  id: item.id,
+                  patch: { content: e.target.value },
+                })
+              }
+            />
+          </div>
+        </Shell>
       );
 
     case "entry": {
-      const set = (
-        patch: Parameters<typeof dispatch>[0] extends never
-          ? never
-          : Partial<
-              Omit<Extract<Item, { kind: "entry" }>, "kind" | "id" | "body">
-            >,
-      ) => dispatch({ type: "entry/update", id: item.id, patch });
+      const set = (patch: EntryPatch) =>
+        dispatch({ type: "entry/update", id: item.id, patch });
       const uses = USES[item.variant];
 
       return (
-        <div style={{ marginBottom: 10 }}>
-          {controls}
+        <Shell {...frame}>
           <Select
             value={item.variant}
             onValueChange={(v) => set({ variant: v as EntryVariant })}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -131,32 +156,37 @@ export function ItemEditor({
               ))}
             </SelectContent>
           </Select>
-          <Input
-            placeholder="title"
-            value={item.title}
-            onChange={(e) => set({ title: e.target.value })}
-          />
-          <Input
-            placeholder="date"
-            value={item.date}
-            onChange={(e) => set({ date: e.target.value })}
-          />
-          {uses.includes("subtitle") && (
+
+          <div className="grid grid-cols-2 gap-2">
             <Input
-              placeholder="subtitle"
-              value={item.subtitle}
-              onChange={(e) => set({ subtitle: e.target.value })}
+              className="col-span-2"
+              placeholder="title"
+              value={item.title}
+              onChange={(e) => set({ title: e.target.value })}
             />
-          )}
-          {uses.includes("location") && (
+            {uses.includes("subtitle") && (
+              <Input
+                placeholder="subtitle"
+                value={item.subtitle}
+                onChange={(e) => set({ subtitle: e.target.value })}
+              />
+            )}
             <Input
-              placeholder="location"
-              value={item.location}
-              onChange={(e) => set({ location: e.target.value })}
+              placeholder="date"
+              value={item.date}
+              onChange={(e) => set({ date: e.target.value })}
             />
-          )}
+            {uses.includes("location") && (
+              <Input
+                placeholder="location"
+                value={item.location}
+                onChange={(e) => set({ location: e.target.value })}
+              />
+            )}
+          </div>
+
           <BodyEditor itemId={item.id} body={item.body} />
-        </div>
+        </Shell>
       );
     }
   }

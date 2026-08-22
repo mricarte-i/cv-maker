@@ -5,7 +5,7 @@ import { ListControls } from "./ListControls";
 import { ItemEditor } from "./ItemEditor";
 import { Button } from "../components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function SectionEditor({
   section,
@@ -20,46 +20,52 @@ export function SectionEditor({
   const items: ListRef = { kind: "items", sectionId: section.id };
 
   return (
-    <Card style={{ marginBottom: 12 }}>
-      <CardHeader style={{ display: "flex", gap: 4 }}>
-        <Input
-          placeholder="section label"
-          value={section.label}
-          onChange={(e) =>
-            dispatch({
-              type: "section/update",
-              id: section.id,
-              label: e.target.value,
-            })
-          }
-        />
-        <ListControls
-          list={{ kind: "sections" }}
-          index={index}
-          length={length}
-        />
+    <Card className="mb-4">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="section label"
+            value={section.label}
+            onChange={(e) =>
+              dispatch({
+                type: "section/update",
+                id: section.id,
+                label: e.target.value,
+              })
+            }
+          />
+          <ListControls
+            list={{ kind: "sections" }}
+            index={index}
+            length={length}
+          />
+        </div>
       </CardHeader>
-
-      {section.items.map((it, i) => (
-        <ItemEditor
-          key={it.id}
-          item={it}
-          parent={items}
-          index={i}
-          length={section.items.length}
-        />
-      ))}
-
-      {(["entry", "oneline", "prose"] as const).map((kind) => (
-        <Button
-          key={kind}
-          onClick={() =>
-            dispatch({ type: "item/add", sectionId: section.id, kind })
-          }
-        >
-          + {kind}
-        </Button>
-      ))}
+      <CardContent className="space-y-3">
+        {section.items.map((it, i) => (
+          <ItemEditor
+            key={it.id}
+            item={it}
+            parent={items}
+            index={i}
+            length={section.items.length}
+          />
+        ))}
+        <div className="flex flex-wrap gap-2">
+          {(["entry", "oneline", "prose"] as const).map((kind) => (
+            <Button
+              key={kind}
+              variant="outline"
+              size="xs"
+              onClick={() =>
+                dispatch({ type: "item/add", sectionId: section.id, kind })
+              }
+            >
+              + {kind}
+            </Button>
+          ))}
+        </div>
+      </CardContent>
     </Card>
   );
 }

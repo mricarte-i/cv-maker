@@ -9,6 +9,10 @@ import {
 } from "../schema/factory";
 import { block, item, list, section, type ListRef } from "./navigate";
 
+export type EntryPatch = Partial<
+  Omit<Extract<Item, { kind: "entry" }>, "kind" | "id" | "body">
+>;
+
 export type Action =
   | { type: "doc/replace"; doc: CVDocument }
   | { type: "doc/set"; field: "name" | "address" | "date"; value: string }
@@ -27,13 +31,7 @@ export type Action =
   // patches: each carries a different shape
   | { type: "contact/update"; id: string; patch: Partial<Omit<Contact, "id">> }
   | { type: "section/update"; id: string; label: string }
-  | {
-      type: "entry/update";
-      id: string;
-      patch: Partial<
-        Omit<Extract<Item, { kind: "entry" }>, "kind" | "id" | "body">
-      >;
-    }
+  | { type: "entry/update"; id: string; patch: EntryPatch }
   | {
       type: "oneline/update";
       id: string;

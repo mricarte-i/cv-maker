@@ -30,28 +30,24 @@ function App() {
 
   return (
     <DispatchCtx value={dispatch}>
-      <div
-        style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}
-      >
-        <div
-          style={{
-            width: 420,
-            padding: 12,
-            borderRight: "1px solid #ccc",
-            overflow: "auto",
-          }}
-        >
-          {FIELDS.map((field) => (
-            <Label key={field} style={{ display: "block", marginBottom: 4 }}>
-              {field}{" "}
-              <Input
-                value={doc[field]}
-                onChange={(e) =>
-                  dispatch({ type: "doc/set", field, value: e.target.value })
-                }
-              />
-            </Label>
-          ))}
+      <div className="flex h-screen">
+        <aside className="w-[28rem] shrink-0 space-y-4 overflow-auto border-r p-4">
+          <div className="grid gap-2">
+            {FIELDS.map((field) => (
+              <div key={field} className="grid gap-1">
+                <Label htmlFor={field} className="capitalize">
+                  {field}
+                </Label>
+                <Input
+                  id={field}
+                  value={doc[field]}
+                  onChange={(e) =>
+                    dispatch({ type: "doc/set", field, value: e.target.value })
+                  }
+                />
+              </div>
+            ))}
+          </div>
 
           <hr />
 
@@ -83,12 +79,13 @@ function App() {
               {error}
             </pre>
           )}
-        </div>
-
-        <div
-          style={{ flex: 1, overflow: "auto", background: "#eee" }}
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
+        </aside>
+        <main className="bg-muted flex-1 overflow-auto p-6">
+          <div
+            style={{ flex: 1, overflow: "auto", background: "#eee" }}
+            dangerouslySetInnerHTML={{ __html: svg }}
+          />
+        </main>
       </div>
     </DispatchCtx>
   );
