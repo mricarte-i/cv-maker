@@ -10,6 +10,12 @@ import { SectionEditor } from "./ui/SectionEditor";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "./components/ui/resizable";
+import { useDefaultLayout } from "react-resizable-panels";
 
 // temporary: seed from the parity fixture so there is something to look at
 // before the editors exist. Swap for emptyDocument() once M7 loads from storage.
@@ -27,66 +33,84 @@ const FIELDS = ["name", "address", "date"] as const;
 function App() {
   const [doc, dispatch] = useReducer(reducer, undefined, initialDoc);
   const { svg, error, pending, ready } = useCompiledCV(doc);
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: "cv-maker-panels",
+    storage: window.localStorage,
+  });
 
   return (
     <DispatchCtx value={dispatch}>
-      <div className="flex h-screen">
-        <aside className="w-[28rem] shrink-0 space-y-4 overflow-auto border-r p-4">
-          <div className="grid gap-2">
-            {FIELDS.map((field) => (
-              <div key={field} className="grid gap-1">
-                <Label htmlFor={field} className="capitalize">
-                  {field}
-                </Label>
-                <Input
-                  id={field}
-                  value={doc[field]}
-                  onChange={(e) =>
-                    dispatch({ type: "doc/set", field, value: e.target.value })
-                  }
-                />
-              </div>
+      <ResizablePanelGroup
+        orientation="horizontal"
+        defaultLayout={defaultLayout}
+        onLayoutChanged={onLayoutChanged}
+        className="h-screen"
+      >
+        <ResizablePanel id="editor" defaultSize="50" minSize="25">
+          <aside className="min-h-full space-y-4 p-4">
+            <div className="grid gap-2">
+              {FIELDS.map((field) => (
+                <div key={field} className="grid gap-1">
+                  <Label htmlFor={field} className="capitalize">
+                    {field}
+                  </Label>
+                  <Input
+                    id={field}
+                    value={doc[field]}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "doc/set",
+                        field,
+                        value: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
+            <hr />
+
+            {doc.sections.map((s, i) => (
+              <SectionEditor
+                key={s.id}
+                section={s}
+                index={i}
+                length={doc.sections.length}
+              />
             ))}
-          </div>
 
-          <hr />
+            <Button onClick={() => dispatch({ type: "section/add" })}>
+              + section
+            </Button>
 
-          {doc.sections.map((s, i) => (
-            <SectionEditor
-              key={s.id}
-              section={s}
-              index={i}
-              length={doc.sections.length}
+            <p style={{ fontSize: 11, color: "#666" }}>
+              {!ready
+                ? "starting compiler…"
+                : pending
+                  ? "compiling…"
+                  : "up to date"}
+            </p>
+
+            {error && (
+              <pre
+                style={{ fontSize: 11, color: "#b00", whiteSpace: "pre-wrap" }}
+              >
+                {error}
+              </pre>
+            )}
+          </aside>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel id="preview" defaultSize="50" minSize="16">
+          <main className="bg-muted min-h-full p-6">
+            <div
+              className="mx-auto w-fit bg-white shadow-lg"
+              dangerouslySetInnerHTML={{ __html: svg }}
             />
-          ))}
-
-          <Button onClick={() => dispatch({ type: "section/add" })}>
-            + section
-          </Button>
-
-          <p style={{ fontSize: 11, color: "#666" }}>
-            {!ready
-              ? "starting compiler…"
-              : pending
-                ? "compiling…"
-                : "up to date"}
-          </p>
-
-          {error && (
-            <pre
-              style={{ fontSize: 11, color: "#b00", whiteSpace: "pre-wrap" }}
-            >
-              {error}
-            </pre>
-          )}
-        </aside>
-        <main className="bg-muted flex-1 overflow-auto p-6">
-          <div
-            style={{ flex: 1, overflow: "auto", background: "#eee" }}
-            dangerouslySetInnerHTML={{ __html: svg }}
-          />
-        </main>
-      </div>
+          </main>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </DispatchCtx>
   );
 }

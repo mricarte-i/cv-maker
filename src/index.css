@@ -166,4 +166,9 @@
   textarea {
     field-sizing: content;
   }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 }
