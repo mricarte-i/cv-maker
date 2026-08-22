@@ -5,6 +5,7 @@ import {
   type CVDocument,
   type Section,
   type Contact,
+  type Bullet,
 } from "./cv";
 
 export const newId = () => crypto.randomUUID();
@@ -44,10 +45,12 @@ export const emptyDocument = (): CVDocument => ({
   sections: [{ id: newId(), label: "About", items: [emptyItem("prose")] }],
 });
 
+export const emptyBullet = (): Bullet => ({ id: newId(), text: "" });
+
 export const emptyBullets = (): Block => ({
   kind: "bullets",
   id: newId(),
-  items: [""],
+  items: [emptyBullet()],
 });
 
 export const emptyContact = (): Contact => ({

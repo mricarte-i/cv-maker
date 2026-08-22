@@ -1,15 +1,17 @@
 import { z } from "zod";
 
-export const SCHEMA_VERSION = 1;
-
 const id = () => z.string().min(1);
+
+export const SCHEMA_VERSION = 2;
+
+export const BulletSchema = z.object({ id: id(), text: z.string() });
 
 export const BlockSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("paragraph"), id: id(), text: z.string() }),
   z.object({
     kind: z.literal("bullets"),
     id: id(),
-    items: z.array(z.string()),
+    items: z.array(BulletSchema),
   }),
 ]);
 
@@ -60,6 +62,7 @@ export const CVDocumentSchema = z.object({
   sections: z.array(SectionSchema),
 });
 
+export type Bullet = z.infer<typeof BulletSchema>;
 export type Block = z.infer<typeof BlockSchema>;
 export type EntryVariant = z.infer<typeof EntryVariantSchema>;
 export type Item = z.infer<typeof ItemSchema>;

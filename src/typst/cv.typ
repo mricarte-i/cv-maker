@@ -8,7 +8,9 @@
 #let render-blocks(bs) = {
   for b in bs {
     if b.kind == "bullets" {
-      if b.items.len() > 0 { list(..b.items) }
+      if b.items.len() > 0 {
+        list(..b.items.map(x => x.text))
+      }
     } else if b.text.trim() != "" {
       par(b.text)
     }

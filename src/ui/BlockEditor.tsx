@@ -37,13 +37,13 @@ export function BlockEditor({
           />
         ) : (
           <>
-            {block.items.map((text, i) => (
-              <div key={i} className="flex items-center gap-1">
+            {block.items.map((bullet, i) => (
+              <div key={bullet.id} className="flex items-center gap-1">
                 <span className="text-muted-foreground select-none">•</span>
                 <Textarea
                   rows={1}
                   className="h-8 flex-1"
-                  value={text}
+                  value={bullet.text}
                   onChange={(e) =>
                     dispatch({
                       type: "bullet/update",

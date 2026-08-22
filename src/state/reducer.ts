@@ -1,6 +1,7 @@
 import { produce, type Draft } from "immer";
 import type { Block, Contact, CVDocument, Item } from "../schema/cv";
 import {
+  emptyBullet,
   emptyBullets,
   emptyContact,
   emptyItem,
@@ -83,7 +84,7 @@ const edit = produce(
       case "bullet/add": {
         const b = block(doc, a.blockId);
         if (b?.kind === "bullets") {
-          b.items.push("");
+          b.items.push(emptyBullet());
         }
         break;
       }
@@ -125,10 +126,14 @@ const edit = produce(
       case "bullet/update": {
         const b = block(doc, a.blockId);
         if (b?.kind === "bullets") {
-          b.items[a.index] = a.text;
+          const bullet = b.items[a.index];
+          if (bullet) {
+            bullet.text = a.text;
+          }
         }
         break;
       }
+
       default:
         a satisfies never;
     }
