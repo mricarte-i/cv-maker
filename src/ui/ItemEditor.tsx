@@ -2,7 +2,6 @@ import type { Block, EntryVariant, Item } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import type { EntryPatch } from "../state/reducer";
 import { useDispatch } from "./dispatch";
-import { ListControls } from "./ListControls";
 import { BlockEditor } from "./BlockEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RowControls, SortableList } from "./Sortable";
 
 /** which fields each variant actually renders — see plan.md §3 */
 const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
@@ -27,15 +27,10 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
 
   return (
     <div className="space-y-2">
-      {body.map((b, i) => (
-        <BlockEditor
-          key={b.id}
-          block={b}
-          parent={parent}
-          index={i}
-          length={body.length}
-        />
-      ))}
+      <SortableList list={parent} items={body} className="space-y-2">
+        {(b, i) => <BlockEditor block={b} parent={parent} index={i} />}
+      </SortableList>
+
       <div className="flex gap-2">
         <Button
           variant="ghost"
@@ -64,17 +59,15 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
 function Shell({
   parent,
   index,
-  length,
   children,
 }: {
   parent: ListRef;
   index: number;
-  length: number;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex gap-2 rounded-md border p-2">
-      <ListControls list={parent} index={index} length={length} />
+      <RowControls list={parent} index={index} />
       <div className="min-w-0 flex-1 space-y-2">{children}</div>
     </div>
   );
@@ -84,15 +77,13 @@ export function ItemEditor({
   item,
   parent,
   index,
-  length,
 }: {
   item: Item;
   parent: ListRef;
   index: number;
-  length: number;
 }) {
   const dispatch = useDispatch();
-  const frame = { parent, index, length };
+  const frame = { parent, index };
 
   switch (item.kind) {
     case "prose":

@@ -20,6 +20,7 @@ import {
 } from "./components/ui/resizable";
 import { ContactsEditor } from "./ui/ContactsEditor";
 import { Preview } from "./ui/Preview";
+import { SortableList } from "./ui/Sortable";
 
 function initialDoc(): CVDocument {
   const saved = loadDoc();
@@ -85,14 +86,13 @@ function App() {
 
             <hr />
 
-            {doc.sections.map((s, i) => (
-              <SectionEditor
-                key={s.id}
-                section={s}
-                index={i}
-                length={doc.sections.length}
-              />
-            ))}
+            <SortableList
+              list={{ kind: "sections" }}
+              items={doc.sections}
+              className="space-y-4"
+            >
+              {(s, i) => <SectionEditor section={s} index={i} />}
+            </SortableList>
 
             <Button onClick={() => dispatch({ type: "section/add" })}>
               + section

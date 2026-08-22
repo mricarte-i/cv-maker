@@ -1,26 +1,24 @@
 import type { Section } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
-import { ListControls } from "./ListControls";
 import { ItemEditor } from "./ItemEditor";
 import { Button } from "../components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { RowControls, SortableList } from "./Sortable";
 
 export function SectionEditor({
   section,
   index,
-  length,
 }: {
   section: Section;
   index: number;
-  length: number;
 }) {
   const dispatch = useDispatch();
   const items: ListRef = { kind: "items", sectionId: section.id };
 
   return (
-    <Card className="mb-4">
+    <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <Input
@@ -34,23 +32,15 @@ export function SectionEditor({
               })
             }
           />
-          <ListControls
-            list={{ kind: "sections" }}
-            index={index}
-            length={length}
-          />
+          <RowControls list={{ kind: "sections" }} index={index} />
         </div>
       </CardHeader>
+
       <CardContent className="space-y-3">
-        {section.items.map((it, i) => (
-          <ItemEditor
-            key={it.id}
-            item={it}
-            parent={items}
-            index={i}
-            length={section.items.length}
-          />
-        ))}
+        <SortableList list={items} items={section.items} className="space-y-3">
+          {(it, i) => <ItemEditor item={it} parent={items} index={i} />}
+        </SortableList>
+
         <div className="flex flex-wrap gap-2">
           {(["entry", "oneline", "prose"] as const).map((kind) => (
             <Button
