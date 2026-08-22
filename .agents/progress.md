@@ -224,10 +224,10 @@ Reducer and editors are done. Reordering is what is left.
 - [x] Dispatch through context — `src/ui/dispatch.ts`, React 19 `<Ctx value>`
 - [x] Tailwind v4 + shadcn, custom theme preset, Libertinus in the UI
 - [x] Resizable editor/preview split — `react-resizable-panels`, layout persisted
-- [ ] `dnd-kit` reorder — blocked on M6.5 below
-- [ ] **Preview scaling.** The SVG is a fixed-width page, so narrowing the preview
-      pane scrolls it rather than shrinking it. Visible on every drag of the
-      splitter. Deserves its own pass — fit-to-width vs a zoom control.
+- [x] **Preview scaling** — `src/ui/Preview.tsx`, fit-to-width plus a zoom step
+      control; see below
+- [x] Resize handle made visible and grabbable — see below
+- [ ] `dnd-kit` reorder — M6.5 is done, so this is now unblocked
 
 ### Two deliberate divergences from plan §5
 
@@ -254,14 +254,54 @@ inside `Shell`. `min-h-0` is the vertical twin.
 
 Related: `ResizablePanelGroup` sets `height: 100%` as an **inline** style, which
 beats any `h-screen` class, so `html, body, #root { height: 100% }` in `index.css`
-is what actually contains the panes. Each `Panel` already renders an inner
-`overflow: auto` scroll box — do not add a competing one.
+is what actually contains the panes.
 
 Also: `react-resizable-panels` 4.x renamed `direction` → `orientation`, replaced
 `autoSaveId` with `useDefaultLayout()`, and reads **numeric sizes as pixels,
 string sizes as percent**. `defaultSize={50}` is a 50-*pixel* panel.
 
-## Milestone 6.5 — bullet ids (`SCHEMA_VERSION` 2) 🚧
+### Preview scaling
+
+The renderer emits **one** root `<svg class="typst-doc">` (pages are nested `g`
+elements, not sibling svgs) carrying `viewBox`, `width`/`height`, and
+`data-width`/`data-height` in points. Because the `viewBox` gives an intrinsic
+ratio, fit-to-width is pure CSS — `[&>svg]:w-full [&>svg]:h-auto` — with no
+`ResizeObserver` and no attribute reading. CSS beats the `width`/`height`
+presentation attributes.
+
+Zoom is a step list where **1 means "fits the pane", not "actual page size"**.
+Clicking the percentage resets to fit. True print zoom would measure against
+`data-width="596.000"`; not done.
+
+**The toolbar has to live outside the scroll box, not be `sticky` inside it.**
+`sticky top-0` pins vertically only, so it scrolled away horizontally at zoom > 1.
+`Preview` is now `flex h-full flex-col` with the page area as `min-h-0 flex-1
+overflow-auto` — i.e. we deliberately own the scroll box one level below the
+`Panel`'s. `min-h-0` is required or the flex child refuses to shrink and the
+overflow escapes upward.
+
+Known and left alone: at zoom > 1 the `p-6` right padding vanishes when scrolled
+horizontally. Standard overflow-padding behaviour.
+
+### The resize handle
+
+`ListControls`-adjacent lesson: **the hit area was never the problem.**
+`Separator` takes its `getBoundingClientRect()` and inflates it to a minimum of
+**10 px for a mouse, 20 px for touch** (`resizeTargetMinimumSize`, a `Group`
+prop), then tests pointer coordinates against that rect. Detection is pure
+geometry — the `after:` pseudo-element shadcn ships contributes nothing and was
+removed.
+
+What was missing was feedback. `Separator` sets `data-separator` to
+`inactive | hover | active | focus | disabled`, and `hover` fires on entering the
+*inflated* region — so `group/handle` + `group-data-[separator=hover]/handle:`
+colours both the bar and the grip pill at exactly the right moment.
+
+Also: the default separator is **vertical**, and the wrapper already rotates its
+child 90° for the horizontal case, so the base glyph is `GripVertical`. The
+shadcn default grip is `w-1` (4 px), which cannot show a 16 px icon.
+
+## Milestone 6.5 — bullet ids (`SCHEMA_VERSION` 2) ✅
 
 **Blocks dnd-kit.** Plan §2 deliberately left bullet strings without ids: "making
 them draggable later is a `schemaVersion` bump, which is what the field is for."
@@ -269,21 +309,39 @@ That day is now — uniform drag handles need a stable key per bullet.
 
 `{ kind: "bullets"; items: string[] }` → `items: { id: string; text: string }[]`
 
-- [ ] `cv.ts` — bullet object schema; bump `SCHEMA_VERSION` to 2
-- [ ] `migrate.ts` — the first real entry in `MIGRATIONS`: map each string to
-      `{ id: newId(), text }`, bump to 2
-- [ ] `factory.ts` — `emptyBullets()`, plus an `emptyBullet()`
-- [ ] `reducer.ts` — `bullet/add`, `bullet/update`
-- [ ] `BlockEditor.tsx` — key on the bullet id instead of the index
-- [ ] `cv.typ` — `list(..b.items)` → map to `.text` first
-- [ ] `sample/content-en.json` — leave at v1 so `migrate()` is exercised on every
-      load, or regenerate at v2
-- [ ] `navigate.ts` — **no change expected.** The `bullets` `ListRef` branch is
-      already erased to `unknown[]`, so `list/move` and `list/remove` keep working.
+- [x] `cv.ts` — `BulletSchema`; `SCHEMA_VERSION` bumped to 2
+- [x] `migrate.ts` — first real entry in `MIGRATIONS`
+- [x] `factory.ts` — `emptyBullet()`, `emptyBullets()`
+- [x] `reducer.ts` — `bullet/add`, `bullet/update`
+- [x] `BlockEditor.tsx` — keyed on the bullet id instead of the index
+- [x] `cv.typ` — `list(..b.items.map(x => x.text))`
+- [x] `sample/content-en.json` — **left at v1 on purpose**, so `migrate()` runs for
+      real on every fresh load instead of sitting untested
+- [x] `navigate.ts` — **no change needed, as predicted.** The `bullets` `ListRef`
+      branch is already erased to `unknown[]`, so `list/move` and `list/remove`
+      kept working untouched. The erasure earned its keep.
 
-The migration gets exercised for free: `loadDoc()` → `parseDocument()` →
-`migrate()`, so every v1 document already sitting in a browser's localStorage
-upgrades on load.
+### What the migration had to get right
+
+**It runs on untrusted JSON, before zod.** So it cannot assume shapes and must not
+throw — a malformed document has to reach `parseDocument()` and produce a real
+error, not blow up one layer early. Two helpers make pass-through the default:
+`mapArray(v, f)` maps only if `v` is an array, `mapKey(v, key, f)` rewrites only
+if `v` is an object that *has* that key. The `key in v` test is what stops a
+`oneline` item — which has no `body` — from acquiring a stray `body: undefined`.
+
+**`bullet/update` needed a new guard.** `b.items[a.index] = a.text` used to punch
+a hole in the array on a stale index; `b.items[a.index].text = ...` throws. Same
+action, different failure mode — hence `const bullet = b.items[a.index]; if (bullet)`.
+
+**The action stayed index-based** (`{ blockId, index, text }`) rather than moving
+to an id. Indices are already the currency for bullets via `list/move` and
+`list/remove`; switching just this one would make it the odd action out and buy a
+`bullet()` navigate helper nothing else needs.
+
+The migration is exercised for free on both paths: `loadDoc()` → `parseDocument()`
+→ `migrate()` upgrades anything already in localStorage, and the v1 fixture
+covers the cold-start path.
 
 ## Milestone 7 — Persistence 🚧
 
