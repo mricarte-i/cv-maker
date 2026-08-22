@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-08-18
+Last updated: 2026-08-22
 
 ---
 
@@ -21,13 +21,15 @@ Last updated: 2026-08-18
 - [ ] **Root `LICENSE` — still undecided.** No license = all rights reserved.
       MIT is the low-friction default if this goes public; neither vendored
       license constrains the choice.
-- [ ] **`.gitignore` still ignores `.agents` wholesale** ([.gitignore:14](../.gitignore#L14)),
-      so `plan.md` and this file are untracked. Carve out with `!.agents/*.md`.
+- [x] `.gitignore` — `.agents/*.md` now tracked, `*:Zone.Identifier` ignored
+- [x] Root `tsconfig.json` reduced to a pure solution file. Its `baseUrl` tripped
+      TS5101, so a bare `tsc --noEmit` exited before checking anything;
+      `tsconfig.app.json` already carries `paths` *and* `ignoreDeprecations`.
 
 ## Milestone 2 — Spike ✅
 
-All four gates pass. Spike code lives in `src/spike/` and is throwaway —
-except `fixtures.ts`, whose adversarial `SAMPLE` is reusable for parity work.
+All four gates pass. `src/spike/` has since been deleted — see M4 for why its
+`fixtures.ts` was not worth salvaging.
 
 | Gate | Result | Evidence |
 |---|---|---|
@@ -133,11 +135,19 @@ future version degrades instead of failing to load.
       fixture (six sections, every item kind, both block kinds). Still one page;
       bullet indentation and both `h(1fr)` alignments match. The only known
       divergence is `sectionsep` placement, below - 1pt across the document.
-- [ ] **Re-run the adversarial `SAMPLE`** through the new adapter (`render-blocks`
-      is new code between the JSON and the template). One button click in the
-      spike App; not yet done.
-- [ ] **Exercise the blank-location education branch** — `content-en.json` has a
-      non-empty location, so the inlined dangling-comma path is still untested.
+- [x] **Adversarial input re-verified** through `render-blocks` — `# [ ] * _ @ -`
+      plus an em dash, typed straight into a paragraph in the running editor.
+      All inert in the preview.
+- [x] **Blank-location education branch exercised** — clearing ITBA's location
+      renders the institution with no trailing comma.
+
+Both were done by hand in the editor rather than through the spike fixture, and
+`src/spike/` was deleted afterwards. `SAMPLE` had rotted: blocks and contacts
+gained ids in M3, so it no longer parsed (four `expected string, received
+undefined`). Its `CV_TYP` was worse than dead — the superseded spike adapter,
+routing every variant through `job()`, which is the exact thing M4 corrected.
+The only thing in the file still worth anything was one adversarial string, and
+the editor can now type it directly.
 
 ### Open Q1 resolved — and the plan's leaning was wrong
 
@@ -183,29 +193,113 @@ Corrected in plan.md revision 3, section 3.
 
 ---
 
-## Milestone 5 — Compile layer 🚧
+## Milestone 5 — Compile layer ✅
 
-Less remains here than it looks. The worker already works and supersession
-already exists as the `seq` ref in `App.tsx`; what is missing is a hook, so
-that every editor built in M6 is visible in the preview instead of written
-blind.
+- [x] Spike promoted → `src/typst/{worker,client}.ts`
+- [x] `useCompiledCV(doc)` → `{ svg, diagnostics, error, pending, ready }`;
+      debounce (200 ms) and `seq` supersession moved out of `App.tsx`
+- [x] Last good SVG survives a failed compile (`svg: r.ok ? r.svg : s.svg`)
+- [x] `src/spike/` deleted
 
-- [ ] Promote the spike: `src/spike/{worker,client}.ts` → `src/typst/`
-- [ ] `useCompiledCv(doc)` → `{ svg, diagnostics, pending }` — debounce and
-      supersession move out of `App.tsx` and into the hook
-- [ ] Last good SVG survives a failed compile
-- [ ] Delete `src/spike/` once the adversarial fixture has been re-run
+Two details worth keeping:
 
-## Milestone 6 — UI
+- **The compile trigger is `useMemo(() => JSON.stringify(doc), [doc])`.** Immer's
+  structural sharing already returns the identical object on a no-op, and the
+  stringify collapses equal-content documents on top of that — so a keystroke
+  that changes nothing costs no compile.
+- **`worker.onerror` resolves every pending call.** Without it a compiler crash
+  leaves the hook waiting forever with `pending: true` and no way out.
 
-- [ ] `useReducer` over `CvDocument`
-- [ ] Six editors + registry
-- [ ] `dnd-kit` reorder; stable ids
+## Milestone 6 — UI 🚧
 
-## Milestone 7 — Persistence
+Reducer and editors are done. Reordering is what is left.
 
+- [x] `useReducer` over `CVDocument` — 15 actions, immer `produce`, generic
+      `list/remove` + `list/move` over a `ListRef`
+- [x] Navigation split out into `src/state/navigate.ts` — `section()` / `item()` /
+      `block()` / `list()`, the last returning `unknown[]` because move and
+      remove genuinely do not care what is in the list
+- [x] Editors: `SectionEditor`, `ItemEditor` (+ `BodyEditor`, `Shell`),
+      `BlockEditor`, `ContactsEditor`, `ListControls`
+- [x] Dispatch through context — `src/ui/dispatch.ts`, React 19 `<Ctx value>`
+- [x] Tailwind v4 + shadcn, custom theme preset, Libertinus in the UI
+- [x] Resizable editor/preview split — `react-resizable-panels`, layout persisted
+- [ ] `dnd-kit` reorder — blocked on M6.5 below
+- [ ] **Preview scaling.** The SVG is a fixed-width page, so narrowing the preview
+      pane scrolls it rather than shrinking it. Visible on every drag of the
+      splitter. Deserves its own pass — fit-to-width vs a zoom control.
+
+### Two deliberate divergences from plan §5
+
+**A switch, not an `ITEM_EDITORS` registry.** One `switch (item.kind)` inside
+`ItemEditor` narrows the union just as well and needs no registry type. The three
+branches are ~30 lines each and never justified separate files.
+
+**Plan §5's six-component table has no `ContactsEditor`.** `doc.contacts` renders
+into the header via `cv.typ`, but nothing edited it until now — a gap in the plan,
+not just the code. It renders the whole list rather than one row, since contacts
+are flat.
+
+### `ListControls` is temporary
+
+Three buttons (↑ ↓ ✕) on every row at every depth. dnd-kit collapses the arrows
+into one drag handle; the ✕ stays. Bullet rows are visibly cramped until then.
+
+### Nested flex needs `min-w-0`
+
+**Any flex or grid child that itself contains flex or grid needs `min-w-0`**, or a
+long string blows the row past the panel instead of scrolling inside its input.
+Cost real time twice — bullets rendering at zero width, and entry titles clipping
+inside `Shell`. `min-h-0` is the vertical twin.
+
+Related: `ResizablePanelGroup` sets `height: 100%` as an **inline** style, which
+beats any `h-screen` class, so `html, body, #root { height: 100% }` in `index.css`
+is what actually contains the panes. Each `Panel` already renders an inner
+`overflow: auto` scroll box — do not add a competing one.
+
+Also: `react-resizable-panels` 4.x renamed `direction` → `orientation`, replaced
+`autoSaveId` with `useDefaultLayout()`, and reads **numeric sizes as pixels,
+string sizes as percent**. `defaultSize={50}` is a 50-*pixel* panel.
+
+## Milestone 6.5 — bullet ids (`SCHEMA_VERSION` 2) 🚧
+
+**Blocks dnd-kit.** Plan §2 deliberately left bullet strings without ids: "making
+them draggable later is a `schemaVersion` bump, which is what the field is for."
+That day is now — uniform drag handles need a stable key per bullet.
+
+`{ kind: "bullets"; items: string[] }` → `items: { id: string; text: string }[]`
+
+- [ ] `cv.ts` — bullet object schema; bump `SCHEMA_VERSION` to 2
+- [ ] `migrate.ts` — the first real entry in `MIGRATIONS`: map each string to
+      `{ id: newId(), text }`, bump to 2
+- [ ] `factory.ts` — `emptyBullets()`, plus an `emptyBullet()`
+- [ ] `reducer.ts` — `bullet/add`, `bullet/update`
+- [ ] `BlockEditor.tsx` — key on the bullet id instead of the index
+- [ ] `cv.typ` — `list(..b.items)` → map to `.text` first
+- [ ] `sample/content-en.json` — leave at v1 so `migrate()` is exercised on every
+      load, or regenerate at v2
+- [ ] `navigate.ts` — **no change expected.** The `bullets` `ListRef` branch is
+      already erased to `unknown[]`, so `list/move` and `list/remove` keep working.
+
+The migration gets exercised for free: `loadDoc()` → `parseDocument()` →
+`migrate()`, so every v1 document already sitting in a browser's localStorage
+upgrades on load.
+
+## Milestone 7 — Persistence 🚧
+
+- [x] localStorage autosave — `src/state/persist.ts`: `loadDoc()` +
+      `useAutosave(doc)`, 500 ms debounce (lazier than the 200 ms compile, since
+      nobody is watching the save)
+- [x] Storage treated as a trust boundary — `loadDoc()` routes through
+      `parseDocument()`, so a stale or corrupt document is logged and discarded
+      rather than crashing the load
 - [ ] Resolve: multiple CVs or one? (open Q3)
-- [ ] IndexedDB + autosave + `navigator.storage.persist()`
+- [ ] IndexedDB + `navigator.storage.persist()`
+- [ ] **A reset / new-document control.** Autosave has no in-app escape hatch:
+      `localStorage.removeItem("cv-maker:doc")` in devtools is currently the only
+      way back to the seed fixture.
+- [ ] `App.tsx` still seeds from `sample/content-en.json` when storage is empty.
+      Swap for `emptyDocument()` before shipping.
 
 ## Milestone 8 — PDF download
 
