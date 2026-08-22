@@ -210,9 +210,7 @@ Two details worth keeping:
 - **`worker.onerror` resolves every pending call.** Without it a compiler crash
   leaves the hook waiting forever with `pending: true` and no way out.
 
-## Milestone 6 — UI 🚧
-
-Reducer and editors are done. Reordering is what is left.
+## Milestone 6 — UI ✅
 
 - [x] `useReducer` over `CVDocument` — 15 actions, immer `produce`, generic
       `list/remove` + `list/move` over a `ListRef`
@@ -220,14 +218,14 @@ Reducer and editors are done. Reordering is what is left.
       `block()` / `list()`, the last returning `unknown[]` because move and
       remove genuinely do not care what is in the list
 - [x] Editors: `SectionEditor`, `ItemEditor` (+ `BodyEditor`, `Shell`),
-      `BlockEditor`, `ContactsEditor`, `ListControls`
+      `BlockEditor` (+ `BulletsEditor`), `ContactsEditor`, `Sortable`
 - [x] Dispatch through context — `src/ui/dispatch.ts`, React 19 `<Ctx value>`
 - [x] Tailwind v4 + shadcn, custom theme preset, Libertinus in the UI
 - [x] Resizable editor/preview split — `react-resizable-panels`, layout persisted
 - [x] **Preview scaling** — `src/ui/Preview.tsx`, fit-to-width plus a zoom step
       control; see below
 - [x] Resize handle made visible and grabbable — see below
-- [ ] `dnd-kit` reorder — M6.5 is done, so this is now unblocked
+- [x] `dnd-kit` reorder — one `DndContext` per list, see below
 
 ### Two deliberate divergences from plan §5
 
@@ -240,10 +238,49 @@ into the header via `cv.typ`, but nothing edited it until now — a gap in the p
 not just the code. It renders the whole list rather than one row, since contacts
 are flat.
 
-### `ListControls` is temporary
+### Reordering — `src/ui/Sortable.tsx`
 
-Three buttons (↑ ↓ ✕) on every row at every depth. dnd-kit collapses the arrows
-into one drag handle; the ✕ stays. Bullet rows are visibly cramped until then.
+`ListControls` (↑ ↓ ✕ on every row at every depth) is gone. In its place:
+`SortableList` takes a `ListRef` plus the array and owns the whole mechanism;
+`RowControls` is the grip + ✕; `DragHandle` is the grip alone, used bare in
+bullet rows where it doubles as the `•` marker.
+
+**One `DndContext` per list, nested four deep** (sections → items → blocks →
+bullets). A draggable registers with the *nearest* provider, so a drag cannot
+leave the list it started in — cross-list drops are structurally impossible
+rather than filtered out in the handler. Cost is one hidden live region per
+context, ~30 for `content-en.json`. Cheap, but that's the number to watch.
+
+`SortableList` takes a render prop and wraps each row itself, so a call site
+cannot forget the wrapper or hand it ids that disagree with the rows. That also
+killed the `length` prop from `SectionEditor` / `ItemEditor` / `Shell` /
+`BodyEditor` / `BlockEditor` — it only ever existed to disable the ↓ arrow.
+
+**No reducer change.** `list/move`'s `l.splice(to, 0, ...l.splice(from, 1))` is
+already `arrayMove` semantics, so `onDragEnd` maps ids → indices and dispatches
+the existing action. `ListRef` doing the naming is what made one wrapper cover
+all five lists.
+
+### Four things that cost time
+
+1. **`@dnd-kit/utilities` is a transitive dep only.** `node_modules/@dnd-kit/`
+   holds `core`, `modifiers`, `sortable` — nothing else, so pnpm's strict layout
+   rejects `import { CSS } from "@dnd-kit/utilities"` even though the *types*
+   resolve fine through the symlink. Hand-write `translate3d(0, ${y}px, 0)`;
+   safe because `restrictToVerticalAxis` pins x at 0.
+2. **`setActivatorNodeRef` + listeners on the handle only.** Spreading
+   `listeners` on the row wrapper makes pointerdown inside a `Textarea` start a
+   drag and kills text selection — which is most of this UI.
+3. **`touch-none` on the handle.** dnd-kit does not set `touch-action` for you;
+   without it a touch drag fights the panel's scroll.
+4. **`onDragEnd`'s guard is a bail-out, not a proceed-if.** Written as
+   `if (over && active.id !== over.id) return;` it returns on exactly the case
+   that should dispatch, and the fall-through paths both no-op — so nothing
+   throws, nothing logs, and every row animates back to where it started. Cost
+   an hour. It is `if (!over || active.id === over.id) return;`.
+
+Keyboard reordering came free and replaces what the arrows gave: focus the grip,
+Space to lift, ↑/↓, Space to drop, Esc to cancel.
 
 ### Nested flex needs `min-w-0`
 
@@ -285,7 +322,8 @@ horizontally. Standard overflow-padding behaviour.
 
 ### The resize handle
 
-`ListControls`-adjacent lesson: **the hit area was never the problem.**
+Small-control lesson, same family as the drag handles: **the hit area was
+never the problem.**
 `Separator` takes its `getBoundingClientRect()` and inflates it to a minimum of
 **10 px for a mouse, 20 px for touch** (`resizeTargetMinimumSize`, a `Group`
 prop), then tests pointer coordinates against that rect. Detection is pure
@@ -303,7 +341,7 @@ shadcn default grip is `w-1` (4 px), which cannot show a 16 px icon.
 
 ## Milestone 6.5 — bullet ids (`SCHEMA_VERSION` 2) ✅
 
-**Blocks dnd-kit.** Plan §2 deliberately left bullet strings without ids: "making
+**Unblocked dnd-kit.** Plan §2 deliberately left bullet strings without ids: "making
 them draggable later is a `schemaVersion` bump, which is what the field is for."
 That day is now — uniform drag handles need a stable key per bullet.
 

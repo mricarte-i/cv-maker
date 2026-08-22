@@ -22,7 +22,7 @@ import { useDispatch } from "./dispatch";
 import { cn } from "@/lib/utils";
 import { createContext, useContext } from "react";
 import { Button } from "@/components/ui/button";
-import { GripVertical, X } from "lucide-react";
+import { GripVertical, Trash, X } from "lucide-react";
 
 type Sortable = ReturnType<typeof useSortable>;
 
@@ -148,7 +148,7 @@ export function RowControls({ list, index }: { list: ListRef; index: number }) {
         aria-label="remove"
         onClick={() => dispatch({ type: "list/remove", list, index })}
       >
-        <X />
+        <Trash />
       </Button>
     </div>
   );
