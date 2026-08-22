@@ -163,4 +163,7 @@
   html {
     @apply font-sans;
   }
+  textarea {
+    field-sizing: content;
+  }
 }

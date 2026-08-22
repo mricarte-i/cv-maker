@@ -25,7 +25,8 @@ export function BlockEditor({
       <div className="min-w-0 flex-1 space-y-1.5">
         {block.kind === "paragraph" ? (
           <Textarea
-            rows={3}
+            rows={1}
+            className="min-h-9 resize-none"
             value={block.text}
             onChange={(e) =>
               dispatch({
@@ -40,7 +41,8 @@ export function BlockEditor({
             {block.items.map((text, i) => (
               <div key={i} className="flex items-center gap-1">
                 <span className="text-muted-foreground select-none">•</span>
-                <Input
+                <Textarea
+                  rows={1}
                   className="h-8 flex-1"
                   value={text}
                   onChange={(e) =>
