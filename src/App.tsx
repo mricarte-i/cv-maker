@@ -19,6 +19,7 @@ import {
   ResizablePanelGroup,
 } from "./components/ui/resizable";
 import { ContactsEditor } from "./ui/ContactsEditor";
+import { Preview } from "./ui/Preview";
 
 function initialDoc(): CVDocument {
   const saved = loadDoc();
@@ -116,12 +117,7 @@ function App() {
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel id="preview" defaultSize="50" minSize="16">
-          <main className="bg-muted min-h-full p-6">
-            <div
-              className="mx-auto w-fit bg-white shadow-lg"
-              dangerouslySetInnerHTML={{ __html: svg }}
-            />
-          </main>
+          <Preview svg={svg} />
         </ResizablePanel>
       </ResizablePanelGroup>
     </DispatchCtx>
