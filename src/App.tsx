@@ -18,6 +18,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "./components/ui/resizable";
+import { ContactsEditor } from "./ui/ContactsEditor";
 
 function initialDoc(): CVDocument {
   const saved = loadDoc();
@@ -74,6 +75,11 @@ function App() {
                   />
                 </div>
               ))}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Contacts</Label>
+              <ContactsEditor contacts={doc.contacts} />
             </div>
 
             <hr />
