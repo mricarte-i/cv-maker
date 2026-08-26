@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-08-22
+Last updated: 2026-08-26
 
 ---
 
@@ -389,7 +389,7 @@ covers the cold-start path.
 - [x] Storage treated as a trust boundary — `loadDoc()` routes through
       `parseDocument()`, so a stale or corrupt document is logged and discarded
       rather than crashing the load
-- [ ] Resolve: multiple CVs or one? (open Q3)
+- [x] Resolve: multiple CVs or one? — **one** (open Q3, resolved)
 - [ ] IndexedDB + `navigator.storage.persist()`
 - [ ] **A reset / new-document control.** Autosave has no in-app escape hatch:
       `localStorage.removeItem("cv-maker:doc")` in devtools is currently the only
@@ -422,6 +422,6 @@ covers the cold-start path.
 |---|---|---|---|
 | 1 | `entry.variant` rendering | M4 | ✅ **resolved** — branch to `job`/`education`/`project`, not `twoline-item` |
 | 2 | Multi-language | — | leaning separate documents; `sys.inputs` available either way |
-| 3 | Multiple CVs vs one | M7 | open |
+| 3 | Multiple CVs vs one | M7 | ✅ **resolved** — one. A switcher needs doc-level `id`/`label` (a v3 migration), a `doc/replace` action, a flush-on-switch fix for the autosave debounce, and delete/rename/duplicate. M10's `content.json` round-trip covers the real use case (tailor a copy per application) for free. `CVDocument` is self-contained and versioned, so adding a library wrapper later stays cheap. |
 | 4 | Section labels free text or preset | M6 | ✅ **resolved** — free text |
 | 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip); phone untested |
