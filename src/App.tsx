@@ -5,7 +5,7 @@ import contentEn from "../sample/content-en.json?raw";
 import { parseDocument } from "./schema/parse";
 import { emptyDocument } from "./schema/factory";
 import type { CVDocument } from "./schema/cv";
-import { loadDoc, useAutosave } from "./state/persist";
+import { useAutosave, useStoredDocument } from "./state/persist";
 import { reducer } from "./state/reducer";
 import { useCompiledCV } from "./typst/useCompiledCV";
 import { DispatchCtx } from "./ui/dispatch";
@@ -22,13 +22,10 @@ import { ContactsEditor } from "./ui/ContactsEditor";
 import { Preview } from "./ui/Preview";
 import { SortableList } from "./ui/Sortable";
 
-function initialDoc(): CVDocument {
-  const saved = loadDoc();
-  if (saved) {
-    return saved;
-  }
+const FIELDS = ["name", "address", "date"] as const;
 
-  // fallback on no saved document
+/** the seed fixture is no longer the boot default — it is reachable on demand */
+function sampleDocument(): CVDocument {
   const r = parseDocument(JSON.parse(contentEn));
   if (!r.ok) {
     console.warn(`sample document rejected:\n${r.error}`);
@@ -37,16 +34,34 @@ function initialDoc(): CVDocument {
   return r.doc;
 }
 
-const FIELDS = ["name", "address", "date"] as const;
-
 function App() {
-  const [doc, dispatch] = useReducer(reducer, undefined, initialDoc);
+  const initial = useStoredDocument();
+
+  if (!initial) {
+    return (
+      <div className="grid h-screen place-items-center text-sm text-muted-foreground">
+        loading…
+      </div>
+    );
+  }
+  return <Editor initial={initial} />;
+}
+
+/** mounts once the stored document has been read, so `initial` never changes */
+function Editor({ initial }: { initial: CVDocument }) {
+  const [doc, dispatch] = useReducer(reducer, initial);
   useAutosave(doc);
   const { svg, error, pending, ready } = useCompiledCV(doc);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "cv-maker-panels",
     storage: window.localStorage,
   });
+
+  const replace = (make: () => CVDocument, prompt: string) => {
+    if (window.confirm(prompt)) {
+      dispatch({ type: "doc/replace", doc: make() });
+    }
+  };
 
   return (
     <DispatchCtx value={dispatch}>
@@ -58,6 +73,33 @@ function App() {
       >
         <ResizablePanel id="editor" defaultSize="50" minSize="25">
           <aside className="min-h-full space-y-4 p-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-sm font-medium">cv-maker</h1>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() =>
+                    replace(sampleDocument, "Replace this CV with the sample?")
+                  }
+                >
+                  sample
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() =>
+                    replace(
+                      emptyDocument,
+                      "Discard this CV and start over? This cannot be undone.",
+                    )
+                  }
+                >
+                  reset
+                </Button>
+              </div>
+            </div>
+
             <div className="grid gap-2">
               {FIELDS.map((field) => (
                 <div key={field} className="grid gap-1">

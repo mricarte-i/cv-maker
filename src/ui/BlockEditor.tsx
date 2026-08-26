@@ -4,7 +4,7 @@ import type { Block } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 import { DragHandle, RowControls, SortableList } from "./Sortable";
-import { Trash, X } from "lucide-react";
+import { Trash } from "lucide-react";
 
 function BulletsEditor({
   block,

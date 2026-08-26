@@ -22,7 +22,7 @@ import { useDispatch } from "./dispatch";
 import { cn } from "@/lib/utils";
 import { createContext, useContext } from "react";
 import { Button } from "@/components/ui/button";
-import { GripVertical, Trash, X } from "lucide-react";
+import { GripVertical, Trash } from "lucide-react";
 
 type Sortable = ReturnType<typeof useSortable>;
 
