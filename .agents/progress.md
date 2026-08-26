@@ -438,7 +438,7 @@ Best-effort: an IndexedDB write on the way out is not guaranteed to land.
 ## Milestone 10 — Export
 
 - [ ] Zip: `cv.typ` + `content.json` + template + LICENSE + README
-- [ ] Bare `content.json` round-trip
+- [x] Bare `content.json` round-trip
 
 ---
 

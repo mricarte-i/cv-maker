@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useReducer, useRef } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 
 import contentEn from "../sample/content-en.json?raw";
@@ -7,6 +7,7 @@ import { emptyDocument } from "./schema/factory";
 import type { CVDocument } from "./schema/cv";
 import { useAutosave, useStoredDocument } from "./state/persist";
 import { reducer } from "./state/reducer";
+import { exportDocument, importDocument } from "./state/transfer";
 import { useCompiledCV } from "./typst/useCompiledCV";
 import { DispatchCtx } from "./ui/dispatch";
 import { SectionEditor } from "./ui/SectionEditor";
@@ -63,6 +64,24 @@ function Editor({ initial }: { initial: CVDocument }) {
     }
   };
 
+  const fileInput = useRef<HTMLInputElement>(null);
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // so re-picking the same file fires change again
+    if (!file) {
+      return;
+    }
+
+    const r = await importDocument(file);
+    if (!r.ok) {
+      window.alert(`Could not import that file.\n\n${r.error}`);
+      return;
+    }
+    if (window.confirm("Replace this CV with the imported one?")) {
+      dispatch({ type: "doc/replace", doc: r.doc });
+    }
+  };
+
   return (
     <DispatchCtx value={dispatch}>
       <ResizablePanelGroup
@@ -76,6 +95,27 @@ function Editor({ initial }: { initial: CVDocument }) {
             <div className="flex items-center justify-between">
               <h1 className="text-sm font-medium">cv-maker</h1>
               <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => fileInput.current?.click()}
+                >
+                  import
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => exportDocument(doc)}
+                >
+                  export
+                </Button>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={onPick}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
