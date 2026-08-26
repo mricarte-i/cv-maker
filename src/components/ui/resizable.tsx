@@ -33,10 +33,10 @@ function ResizableHandle({
     <ResizablePrimitive.Separator
       data-slot="resizable-handle"
       className={cn(
-        "group/handle relative flex w-px items-center justify-center bg-border transition-colors",
+        "group/handle relative flex w-3 items-center justify-center bg-border transition-colors",
         "data-[separator=hover]:bg-primary/60 data-[separator=active]:bg-primary",
         "focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden",
-        "aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full",
+        "aria-[orientation=horizontal]:h-2 aria-[orientation=horizontal]:w-full",
         "[&[aria-orientation=horizontal]>div]:rotate-90",
         className,
       )}
@@ -45,7 +45,7 @@ function ResizableHandle({
       {withHandle && (
         <div
           className={cn(
-            "z-10 flex h-8 w-6 items-center justify-center rounded-sm border bg-border text-muted-foreground transition-colors",
+            "z-10 flex h-8 w-3 items-center justify-center rounded-sm border bg-border text-muted-foreground transition-colors",
             "group-data-[separator=hover]/handle:bg-primary/60",
             "group-data-[separator=active]/handle:bg-primary group-data-[separator=active]/handle:text-primary-foreground",
           )}
