@@ -381,21 +381,47 @@ The migration is exercised for free on both paths: `loadDoc()` → `parseDocumen
 → `migrate()` upgrades anything already in localStorage, and the v1 fixture
 covers the cold-start path.
 
-## Milestone 7 — Persistence 🚧
+## Milestone 7 — Persistence ✅
 
-- [x] localStorage autosave — `src/state/persist.ts`: `loadDoc()` +
-      `useAutosave(doc)`, 500 ms debounce (lazier than the 200 ms compile, since
-      nobody is watching the save)
-- [x] Storage treated as a trust boundary — `loadDoc()` routes through
+- [x] Autosave — `src/state/persist.ts`, 500 ms debounce (lazier than the 200 ms
+      compile, since nobody is watching the save)
+- [x] Storage treated as a trust boundary — every read routes through
       `parseDocument()`, so a stale or corrupt document is logged and discarded
       rather than crashing the load
 - [x] Resolve: multiple CVs or one? — **one** (open Q3, resolved)
-- [ ] IndexedDB + `navigator.storage.persist()`
-- [ ] **A reset / new-document control.** Autosave has no in-app escape hatch:
-      `localStorage.removeItem("cv-maker:doc")` in devtools is currently the only
-      way back to the seed fixture.
-- [ ] `App.tsx` still seeds from `sample/content-en.json` when storage is empty.
-      Swap for `emptyDocument()` before shipping.
+- [x] IndexedDB + `navigator.storage.persist()`
+- [x] Reset control — `reset` and `sample` buttons in the editor header, both
+      `doc/replace` behind a `window.confirm`
+- [x] `App.tsx` no longer seeds from `sample/content-en.json` — an empty
+      document is the default, and the fixture is a button
+
+### Why the storage swap reshaped `App.tsx`
+
+IndexedDB reads are async and `useReducer` is not, so the load has to gate the
+render. `App` now does nothing but await `useStoredDocument()`; `Editor` mounts
+underneath it with the document already in hand.
+
+That ordering is the point, not a side effect. The alternative — seed the
+reducer with `emptyDocument()` and hydrate later via `doc/replace` — leaves a
+window where autosave can fire against the placeholder and write it over the
+stored copy. Gating the mount deletes that race instead of guarding against it.
+
+### Two things worth remembering
+
+**The old `localStorage` key migrates itself.** First boot on the new store
+reads `cv-maker:doc`, writes it into IndexedDB, and only then removes it. A
+failed write leaves the old copy alone to retry next boot rather than losing it.
+Same reason IndexedDB failing outright falls back to reading `localStorage`
+instead of returning empty.
+
+**Autosave dropped `JSON.stringify`.** It used to memoize on a serialized copy;
+IndexedDB stores the object directly via structured clone, so the effect keys on
+`doc` identity. That is more precise, not less — immer returns the base object
+unchanged when a recipe writes an identical value, so retyping the same
+character over itself schedules no write at all.
+
+A `visibilitychange` handler flushes a pending debounce when the tab hides.
+Best-effort: an IndexedDB write on the way out is not guaranteed to land.
 
 ## Milestone 8 — PDF download
 
