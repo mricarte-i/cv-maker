@@ -78,6 +78,20 @@ async function compile(json: string) {
   };
 }
 
+async function pdf(json: string) {
+  compiler.mapShadow("/content.json", enc.encode(json));
+
+  const { result, diagnostics } = await compiler.compile({
+    mainFilePath: "/cv.typ",
+    format: CompileFormatEnum.pdf,
+    diagnostics: "full",
+  });
+
+  return result
+    ? { ok: true as const, diagnostics: diagnostics ?? [], pdf: result }
+    : { ok: false as const, diagnostics: diagnostics ?? [] };
+}
+
 let ready: Promise<number> | null = null;
 self.onmessage = async (e: MessageEvent) => {
   const { id, type, payload } = e.data;
@@ -87,6 +101,11 @@ self.onmessage = async (e: MessageEvent) => {
     } else if (type === "compile") {
       await (ready ??= init());
       self.postMessage({ id, ...(await compile(payload)) });
+    } else if (type === "pdf") {
+      await (ready ??= init());
+      const r = await pdf(payload);
+      // hand the buffer over instead of structured-cloning a few hundred KB
+      self.postMessage({ id, ...r }, r.ok ? [r.pdf.buffer] : []);
     }
   } catch (err) {
     self.postMessage({ id, ok: false, error: String(err) });

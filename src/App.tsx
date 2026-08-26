@@ -1,4 +1,4 @@
-import { useReducer, useRef } from "react";
+import { useReducer, useRef, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 
 import contentEn from "../sample/content-en.json?raw";
@@ -7,7 +7,7 @@ import { emptyDocument } from "./schema/factory";
 import type { CVDocument } from "./schema/cv";
 import { useAutosave, useStoredDocument } from "./state/persist";
 import { reducer } from "./state/reducer";
-import { exportDocument, importDocument } from "./state/transfer";
+import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
 import { useCompiledCV } from "./typst/useCompiledCV";
 import { DispatchCtx } from "./ui/dispatch";
 import { SectionEditor } from "./ui/SectionEditor";
@@ -65,6 +65,7 @@ function Editor({ initial }: { initial: CVDocument }) {
   };
 
   const fileInput = useRef<HTMLInputElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // so re-picking the same file fires change again
@@ -81,6 +82,14 @@ function Editor({ initial }: { initial: CVDocument }) {
       dispatch({ type: "doc/replace", doc: r.doc });
     }
   };
+  const onPdf = async () => {
+    setPdfBusy(true);
+    const err = await downloadPdf(doc);
+    setPdfBusy(false);
+    if (err) {
+      window.alert(`Could not download PDF.\n\n${err}`);
+    }
+  };
 
   return (
     <DispatchCtx value={dispatch}>
@@ -95,6 +104,15 @@ function Editor({ initial }: { initial: CVDocument }) {
             <div className="flex items-center justify-between">
               <h1 className="text-sm font-medium">cv-maker</h1>
               <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={pdfBusy}
+                  onClick={onPdf}
+                >
+                  {pdfBusy ? "…" : "pdf"}
+                </Button>
+
                 <Button
                   variant="ghost"
                   size="xs"

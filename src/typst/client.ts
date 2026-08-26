@@ -2,6 +2,12 @@ import type { DiagnosticsData } from "@myriaddreamin/typst.ts/compiler";
 
 export type Diagnostic = DiagnosticsData["full"];
 
+export type PdfResult =
+  | { ok: true; pdf: Uint8Array<ArrayBuffer>; diagnostics: Diagnostic[] }
+  | { ok: false; diagnostics: Diagnostic[]; error?: string };
+
+export const compilePdf = (json: string) => call<PdfResult>("pdf", json);
+
 export type CompileResult =
   | {
       ok: true;

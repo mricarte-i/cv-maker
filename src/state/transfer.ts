@@ -1,31 +1,36 @@
 import type { CVDocument } from "../schema/cv";
 import { parseDocument, type ParseResult } from "../schema/parse";
+import { compilePdf } from "../typst/client";
 
-/** `matias-ricarte.json`, or `content.json` before there is a name to slug */
-function filename(doc: CVDocument): string {
-  const slug = doc.name
+/** `matias-ricarte`, or null before there is a name to slug */
+function slug(doc: CVDocument): string | null {
+  const s = doc.name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  return slug ? `${slug}.json` : "content.json";
+  return s || null;
 }
 
-export function exportDocument(doc: CVDocument) {
-  const blob = new Blob([JSON.stringify(doc, null, 2)], {
-    type: "application/json",
-  });
+function save(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename(doc);
+  a.download = name;
   document.body.append(a); // firefox ignores a click on a detached anchor
   a.click();
   a.remove();
 
   // revoking in the same tick has been known to kill the download mid-flight
   setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export function exportDocument(doc: CVDocument) {
+  save(
+    new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }),
+    `${slug(doc) ?? "content"}.json`,
+  );
 }
 
 export async function importDocument(file: File): Promise<ParseResult> {
@@ -36,4 +41,18 @@ export async function importDocument(file: File): Promise<ParseResult> {
     return { ok: false, error: `not valid JSON: ${String(e)}` };
   }
   return parseDocument(json);
+}
+
+export async function downloadPdf(doc: CVDocument): Promise<string | null> {
+  const r = await compilePdf(JSON.stringify(doc));
+  if (!r.ok) {
+    console.warn("pdf compile failed", r.diagnostics);
+    return r.error ?? "the document did not compile";
+  }
+
+  save(
+    new Blob([r.pdf], { type: "application/pdf" }),
+    `${slug(doc) ?? "cv"}.pdf`,
+  );
+  return null;
 }

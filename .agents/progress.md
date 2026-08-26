@@ -423,10 +423,42 @@ character over itself schedules no write at all.
 A `visibilitychange` handler flushes a pending debounce when the tab hides.
 Best-effort: an IndexedDB write on the way out is not guaranteed to land.
 
-## Milestone 8 — PDF download
+## Milestone 8 — PDF download 🚧
 
-- [ ] `format: 'pdf'` → Blob → object URL
-- [ ] iOS standalone-PWA fallback
+- [x] `format: 'pdf'` → Blob → object URL
+- [ ] iOS standalone-PWA fallback — **not started.** `<a download>` is inert in
+      an iOS home-screen PWA: no download, no error. The workaround is opening
+      the blob in a new tab for the share sheet, which needs the click handler
+      to open the tab *before* any `await` or the popup blocker eats it. Same
+      fix serves `content.json` export, so solve it once for both.
+- [ ] Confirm Libertinus actually embeds. `loadFonts` runs at init, but PDF
+      embedding is a different path from SVG glyph rendering — the download
+      working is not evidence the faces made it in.
+
+### The PDF path skips the renderer entirely
+
+`format: CompileFormatEnum.pdf` makes the compiler emit final bytes, so there is
+no `vector` artifact and no `renderer.renderSvg` step — unlike `compile`, which
+needs both halves. The worker transfers the buffer (`postMessage(msg, [buf])`)
+rather than letting structured clone copy a few hundred KB.
+
+Download deliberately does **not** reuse `useCompiledCV`'s debounced artifact.
+It is a discrete action and compiles fresh at click time; inheriting a 200 ms
+stale render would occasionally hand someone a PDF of what they had a moment
+ago. `pdfBusy` covers the case where the compiler has not warmed up yet.
+
+### `Uint8Array` went generic in TS 5.7
+
+`new Blob([r.pdf])` failed: a bare `Uint8Array` now means
+`Uint8Array<ArrayBufferLike>`, and `BlobPart` wants `ArrayBufferView<ArrayBuffer>`
+— `SharedArrayBuffer` is the member that does not fit.
+
+Fixed at the declaration, not the use site: `PdfResult.pdf` is
+`Uint8Array<ArrayBuffer>` in `client.ts`. That is a statement of fact rather
+than a cast — a `SharedArrayBuffer` in a transfer list throws, so transferring
+the buffer already guarantees it is a plain `ArrayBuffer`. `call<T>` is an
+unchecked generic over an untyped `postMessage`, so the annotation is the only
+place that truth gets written down.
 
 ## Milestone 9 — PWA hardening
 
