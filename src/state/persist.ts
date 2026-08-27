@@ -140,13 +140,37 @@ export function useStoredDocument(): CVDocument | null {
   return doc;
 }
 
+export type SaveState = "saving" | "saved" | "failed";
+
 export function useAutosave(doc: CVDocument) {
+  const [state, setState] = useState<SaveState>("saved");
   const latest = useRef(doc);
+  const first = useRef(true);
+  const seq = useRef(0);
 
   useEffect(() => {
     latest.current = doc;
-    const timer = setTimeout(() => {
-      idbPut(doc).catch((e) => console.warn("autosave failed", e));
+
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+
+    const id = ++seq.current;
+    setState("saving");
+
+    const timer = setTimeout(async () => {
+      try {
+        await idbPut(doc);
+        if (id === seq.current) {
+          setState("saved");
+        }
+      } catch (e) {
+        console.warn("autosave failed", e);
+        if (id === seq.current) {
+          setState("failed");
+        }
+      }
     }, SAVE_MS);
     return () => clearTimeout(timer);
   }, [doc]);
@@ -161,4 +185,6 @@ export function useAutosave(doc: CVDocument) {
     document.addEventListener("visibilitychange", flush);
     return () => document.removeEventListener("visibilitychange", flush);
   }, []);
+
+  return state;
 }

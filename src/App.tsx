@@ -21,6 +21,9 @@ import {
 import { ContactsEditor } from "./ui/ContactsEditor";
 import { Preview } from "./ui/Preview";
 import { SortableList } from "./ui/Sortable";
+import { Plus } from "lucide-react";
+import { StatusToast } from "./ui/StatusToast";
+import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 
 const FIELDS = ["name", "address", "date"] as const;
 
@@ -140,12 +143,21 @@ function EditorTopbar({
 /** mounts once the stored document has been read, so `initial` never changes */
 function Editor({ initial }: { initial: CVDocument }) {
   const [doc, dispatch] = useReducer(reducer, initial);
-  useAutosave(doc);
+  const save = useAutosave(doc);
   const { svg, error, pending, ready } = useCompiledCV(doc);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "cv-maker-panels",
     storage: window.localStorage,
   });
+  const status = !ready
+    ? { label: "Starting compiler…", settled: false }
+    : pending
+      ? { label: "Compiling…", settled: false }
+      : save === "failed"
+        ? { label: "Could not save", settled: false }
+        : save === "saving"
+          ? { label: "Saving…", settled: false }
+          : { label: "Saved", settled: true };
 
   return (
     <DispatchCtx value={dispatch}>
@@ -158,67 +170,57 @@ function Editor({ initial }: { initial: CVDocument }) {
           className="min-h-0 flex-1"
         >
           <ResizablePanel id="editor" defaultSize="50" minSize="25">
-            <aside className="h-full space-y-4 overflow-y-auto p-4">
-              <div className="grid gap-2">
-                {FIELDS.map((field) => (
-                  <div key={field} className="grid gap-1">
-                    <Label htmlFor={field} className="capitalize">
-                      {field}
-                    </Label>
-                    <Input
-                      id={field}
-                      value={doc[field]}
-                      onChange={(e) =>
-                        dispatch({
-                          type: "doc/set",
-                          field,
-                          value: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="relative h-full">
+              <aside className="h-full space-y-4 overflow-y-auto p-4">
+                <div className="grid gap-2">
+                  {FIELDS.map((field) => (
+                    <div key={field} className="grid gap-1">
+                      <Label htmlFor={field} className="capitalize">
+                        {field}
+                      </Label>
+                      <Input
+                        id={field}
+                        value={doc[field]}
+                        onChange={(e) =>
+                          dispatch({
+                            type: "doc/set",
+                            field,
+                            value: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
 
-              <div className="space-y-2">
-                <Label>Contacts</Label>
-                <ContactsEditor contacts={doc.contacts} />
-              </div>
+                <div className="space-y-2">
+                  <Label>Contacts</Label>
+                  <ContactsEditor contacts={doc.contacts} />
+                </div>
 
-              <hr />
+                <hr />
 
-              <SortableList
-                list={{ kind: "sections" }}
-                items={doc.sections}
-                className="space-y-4"
+                <SortableList
+                  list={{ kind: "sections" }}
+                  items={doc.sections}
+                  className="space-y-4"
+                >
+                  {(s, i) => <SectionEditor section={s} index={i} />}
+                </SortableList>
+              </aside>
+
+              <Button
+                size="icon"
+                aria-label="add section"
+                onClick={() => dispatch({ type: "section/add" })}
+                className="absolute bottom-4 right-4 rounded-full shadow-lg"
               >
-                {(s, i) => <SectionEditor section={s} index={i} />}
-              </SortableList>
-
-              <Button onClick={() => dispatch({ type: "section/add" })}>
-                + section
+                <Plus />
               </Button>
 
-              <p style={{ fontSize: 11, color: "#666" }}>
-                {!ready
-                  ? "starting compiler…"
-                  : pending
-                    ? "compiling…"
-                    : "up to date"}
-              </p>
-
-              {error && (
-                <pre
-                  style={{
-                    fontSize: 11,
-                    color: "#b00",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {error}
-                </pre>
-              )}
-            </aside>
+              <StatusToast {...status} />
+              <CompileErrorDialog error={error} />
+            </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel id="preview" defaultSize="50" minSize="16">
