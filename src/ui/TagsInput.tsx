@@ -1,29 +1,25 @@
 import { useState } from "react";
-import { Command, X } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KeyboardKey } from "./KeyboardKey";
+import type { Tag } from "@/schema/cv";
+import { emptyTag } from "@/schema/factory";
+
+const tag = (text: string): Tag => ({ ...emptyTag(), text });
 
 export function TagsInput({
-  value,
+  items,
   onChange,
-  placeholder,
 }: {
-  value: string;
-  onChange: (next: string) => void;
-  placeholder?: string;
+  items: Tag[];
+  onChange: (next: Tag[]) => void;
 }) {
   const [draft, setDraft] = useState("");
-  const tags = value
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const commit = (next: string[]) => onChange(next.join(", "));
 
   const edit = (i: number) => {
-    const rest = tags.filter((_, j) => j !== i);
-    commit(draft.trim() ? [...rest, draft.trim()] : rest);
-    setDraft(tags[i] ?? "");
+    const rest = items.filter((_, j) => j !== i);
+    onChange(draft.trim() ? [...rest, tag(draft.trim())] : rest);
+    setDraft(items[i].text);
   };
 
   const onDraftChange = (raw: string) => {
@@ -31,24 +27,24 @@ export function TagsInput({
       setDraft(raw);
       return;
     }
-
+    // a comma ends a tag — and pasting a whole list ends several at once
     const parts = raw.split(",");
     const tail = parts.pop() ?? "";
     const added = parts.map((p) => p.trim()).filter(Boolean);
     if (added.length) {
-      commit([...tags, ...added]);
+      onChange([...items, ...added.map(tag)]);
     }
     setDraft(tail);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && draft === "" && tags.length) {
+    if (e.key === "Backspace" && draft === "" && items.length) {
       e.preventDefault();
-      edit(tags.length - 1);
+      edit(items.length - 1);
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (draft.trim()) {
-        commit([...tags, draft.trim()]);
+        onChange([...items, tag(draft.trim())]);
       }
       setDraft("");
     }
@@ -62,22 +58,22 @@ export function TagsInput({
           "items-center gap-1 border-b py-1",
         )}
       >
-        {tags.map((tag, i) => (
+        {items.map((t, i) => (
           <span
-            key={`${tag}-${i}`}
+            key={t.id}
             className={cn(
               "bg-muted flex items-center gap-1 rounded-full",
               "py-0.5 pr-1 pl-2 text-xs",
             )}
           >
             <button type="button" onClick={() => edit(i)}>
-              {tag}
+              {t.text}
             </button>
             <button
               type="button"
-              aria-label={`remove ${tag}`}
+              aria-label={`remove ${t.text}`}
               className="opacity-50 hover:opacity-100"
-              onClick={() => commit(tags.filter((_, j) => j !== i))}
+              onClick={() => onChange(items.filter((_, j) => j !== i))}
             >
               <X className="size-3" />
             </button>
@@ -86,12 +82,11 @@ export function TagsInput({
         <input
           className="min-w-24 flex-1 bg-transparent text-sm outline-none"
           value={draft}
-          placeholder={tags.length ? "" : placeholder}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={onKeyDown}
           onBlur={() => {
             if (draft.trim()) {
-              commit([...tags, draft.trim()]);
+              onChange([...items, tag(draft.trim())]);
             }
             setDraft("");
           }}

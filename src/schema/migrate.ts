@@ -28,6 +28,31 @@ const bulletBlock = (b: unknown): unknown =>
         ),
       )
     : b;
+/** v2 → v3: a oneline whose content is a comma list was always a tag list */
+const tagItem = (it: unknown): unknown => {
+  if (
+    typeof it !== "object" ||
+    it === null ||
+    (it as { kind?: unknown }).kind !== "oneline"
+  ) {
+    return it;
+  }
+
+  const { content, ...rest } = it as { content?: unknown };
+  if (typeof content !== "string" || !content.includes(",")) {
+    return it; // "Spanish / Native" stays a oneline
+  }
+
+  return {
+    ...rest,
+    kind: "tags",
+    items: content
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((text) => ({ id: newId(), text })),
+  };
+};
 
 const MIGRATIONS: Record<number, Migration> = {
   1: (doc) => ({
@@ -41,6 +66,14 @@ const MIGRATIONS: Record<number, Migration> = {
       ),
     ) as Record<string, unknown>),
     schemaVersion: 2,
+  }),
+  2: (doc) => ({
+    ...(mapKey(doc, "sections", (ss) =>
+      mapArray(ss, (s) =>
+        mapKey(s, "items", (items) => mapArray(items, tagItem)),
+      ),
+    ) as Record<string, unknown>),
+    schemaVersion: 3,
   }),
 };
 

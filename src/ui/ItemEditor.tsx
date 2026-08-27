@@ -93,6 +93,31 @@ export function ItemEditor({
           <BodyEditor itemId={item.id} body={item.body} />
         </Shell>
       );
+    case "tags":
+      return (
+        <Shell {...frame}>
+          <div className="flex gap-2">
+            <Input
+              className="w-40"
+              placeholder="title"
+              value={item.title}
+              onChange={(e) =>
+                dispatch({
+                  type: "tags/update",
+                  id: item.id,
+                  patch: { title: e.target.value },
+                })
+              }
+            />
+            <TagsInput
+              items={item.items}
+              onChange={(items) =>
+                dispatch({ type: "tags/update", id: item.id, patch: { items } })
+              }
+            />
+          </div>
+        </Shell>
+      );
 
     case "oneline":
       return (
@@ -110,21 +135,20 @@ export function ItemEditor({
                 })
               }
             />
-            <TagsInput
+            <Input
               placeholder="content"
               value={item.content}
-              onChange={(content) =>
+              onChange={(e) =>
                 dispatch({
                   type: "oneline/update",
                   id: item.id,
-                  patch: { content },
+                  patch: { content: e.target.value },
                 })
               }
             />
           </div>
         </Shell>
       );
-
     case "entry": {
       const set = (patch: EntryPatch) =>
         dispatch({ type: "entry/update", id: item.id, patch });

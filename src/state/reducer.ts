@@ -38,6 +38,11 @@ export type Action =
       id: string;
       patch: Partial<Omit<Extract<Item, { kind: "oneline" }>, "kind" | "id">>;
     }
+  | {
+      type: "tags/update";
+      id: string;
+      patch: Partial<Omit<Extract<Item, { kind: "tags" }>, "kind" | "id">>;
+    }
   | { type: "paragraph/update"; id: string; text: string }
   | { type: "bullet/update"; blockId: string; index: number; text: string };
 
@@ -74,7 +79,7 @@ const edit = produce(
         break;
       case "block/add": {
         const it = item(doc, a.itemId);
-        if (it && it.kind !== "oneline") {
+        if (it && "body" in it) {
           it.body.push(
             a.kind === "bullets" ? emptyBullets() : emptyParagraph(),
           );
@@ -130,6 +135,13 @@ const edit = produce(
           if (bullet) {
             bullet.text = a.text;
           }
+        }
+        break;
+      }
+      case "tags/update": {
+        const it = item(doc, a.id);
+        if (it?.kind === "tags") {
+          Object.assign(it, a.patch);
         }
         break;
       }

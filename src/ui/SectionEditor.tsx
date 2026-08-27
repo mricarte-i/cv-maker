@@ -42,7 +42,7 @@ export function SectionEditor({
         </SortableList>
 
         <div className="flex flex-wrap gap-2">
-          {(["entry", "oneline", "prose"] as const).map((kind) => (
+          {(["entry", "oneline", "tags", "prose"] as const).map((kind) => (
             <Button
               key={kind}
               variant="outline"

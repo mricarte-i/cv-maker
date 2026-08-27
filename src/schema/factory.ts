@@ -6,6 +6,7 @@ import {
   type Section,
   type Contact,
   type Bullet,
+  type Tag,
 } from "./cv";
 
 export const newId = () => crypto.randomUUID();
@@ -33,6 +34,8 @@ export const emptyItem = (kind: Item["kind"]): Item => {
       return { kind, id: newId(), title: "", content: "" };
     case "prose":
       return { kind, id: newId(), body: [emptyParagraph()] };
+    case "tags":
+      return { kind, id: newId(), title: "", items: [] };
   }
 };
 
@@ -44,6 +47,8 @@ export const emptyDocument = (): CVDocument => ({
   contacts: [],
   sections: [{ id: newId(), label: "About", items: [emptyItem("prose")] }],
 });
+
+export const emptyTag = (): Tag => ({ id: newId(), text: "" });
 
 export const emptyBullet = (): Bullet => ({ id: newId(), text: "" });
 

@@ -56,6 +56,11 @@
 #let render-item(it) = {
   if it.kind == "entry" {
     render-entry(it)
+  } else if it.kind == "tags" {
+    oneline-title-item(
+      title: it.title,
+      content: it.items.map(x => x.text).join(", "),
+    )
   } else if it.kind == "oneline" {
     oneline-title-item(title: it.title, content: it.content)
   } else {

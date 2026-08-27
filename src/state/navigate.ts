@@ -21,9 +21,16 @@ export const item = (doc: Draft<CVDocument>, id: string) => {
 export const block = (doc: Draft<CVDocument>, id: string) => {
   for (const s of doc.sections) {
     for (const it of s.items) {
-      if (it.kind === "oneline") continue;
+      if (it.kind === "oneline") {
+        continue;
+      }
+      if (!("body" in it)) {
+        continue;
+      }
       const b = it.body.find((x) => x.id === id);
-      if (b) return b;
+      if (b) {
+        return b;
+      }
     }
   }
 };
@@ -42,7 +49,7 @@ export const list = (
       return section(doc, ref.sectionId)?.items;
     case "blocks": {
       const it = item(doc, ref.itemId);
-      return it && it.kind !== "oneline" ? it.body : undefined;
+      return it && "body" in it ? it.body : undefined;
     }
     case "bullets": {
       const b = block(doc, ref.blockId);
