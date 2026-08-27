@@ -174,7 +174,7 @@ function Editor({ initial }: { initial: CVDocument }) {
               <aside className="h-full space-y-4 overflow-y-auto p-4">
                 <div className="grid gap-2">
                   {FIELDS.map((field) => (
-                    <div key={field} className="grid gap-1">
+                    <div key={field} className="grid gap-1 border p-2">
                       <Label htmlFor={field} className="capitalize">
                         {field}
                       </Label>
@@ -193,7 +193,7 @@ function Editor({ initial }: { initial: CVDocument }) {
                   ))}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 border p-2">
                   <Label>Contacts</Label>
                   <ContactsEditor contacts={doc.contacts} />
                 </div>

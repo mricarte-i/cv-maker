@@ -32,25 +32,17 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
         {(b, i) => <BlockEditor block={b} parent={parent} index={i} />}
       </SortableList>
 
-      <div className="flex gap-2">
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() =>
-            dispatch({ type: "block/add", itemId, kind: "paragraph" })
-          }
-        >
-          + paragraph
-        </Button>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() =>
-            dispatch({ type: "block/add", itemId, kind: "bullets" })
-          }
-        >
-          + bullets
-        </Button>
+      <div className="flex gap-2 border p-1 bg-muted/20">
+        {(["paragraph", "bullets"] as const).map((kind) => (
+          <Button
+            key={kind}
+            variant="outline"
+            size="xs"
+            onClick={() => dispatch({ type: "block/add", itemId, kind })}
+          >
+            + {kind}
+          </Button>
+        ))}
       </div>
     </div>
   );
@@ -67,7 +59,7 @@ function Shell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-2 rounded-md border p-2">
+    <div className="flex gap-2 border p-3">
       <RowControls list={parent} index={index} />
       <div className="min-w-0 flex-1 space-y-2">{children}</div>
     </div>
@@ -96,9 +88,9 @@ export function ItemEditor({
     case "tags":
       return (
         <Shell {...frame}>
-          <div className="flex gap-2">
+          <div className="grid gap-2">
             <Input
-              className="w-40"
+              className="w-full"
               placeholder="title"
               value={item.title}
               onChange={(e) =>

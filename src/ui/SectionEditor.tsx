@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RowControls, SortableList } from "./Sortable";
 
+import { cn } from "@/lib/utils";
+
 export function SectionEditor({
   section,
   index,
@@ -18,9 +20,9 @@ export function SectionEditor({
   const items: ListRef = { kind: "items", sectionId: section.id };
 
   return (
-    <Card>
+    <Card className="border [--card-spacing:--spacing(3)]">
       <CardHeader>
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <Input
             placeholder="section label"
             value={section.label}
@@ -31,6 +33,7 @@ export function SectionEditor({
                 label: e.target.value,
               })
             }
+            className="h-10 text-lg font-bold md:text-lg"
           />
           <RowControls list={{ kind: "sections" }} index={index} />
         </div>
@@ -41,7 +44,7 @@ export function SectionEditor({
           {(it, i) => <ItemEditor item={it} parent={items} index={i} />}
         </SortableList>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 border p-1 bg-muted/40">
           {(["entry", "oneline", "tags", "prose"] as const).map((kind) => (
             <Button
               key={kind}
@@ -49,6 +52,14 @@ export function SectionEditor({
               size="xs"
               onClick={() =>
                 dispatch({ type: "item/add", sectionId: section.id, kind })
+              }
+              className={
+                kind === "entry"
+                  ? cn(
+                      "bg-black/40 text-primary-foreground",
+                      "hover:bg-chart-2 hover:text-primary-foreground",
+                    )
+                  : ""
               }
             >
               + {kind}

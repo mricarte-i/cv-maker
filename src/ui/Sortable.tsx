@@ -147,6 +147,7 @@ export function RowControls({ list, index }: { list: ListRef; index: number }) {
         size="icon-xs"
         aria-label="remove"
         onClick={() => dispatch({ type: "list/remove", list, index })}
+        className="hover:bg-destructive hover:text-primary-foreground"
       >
         <Trash />
       </Button>
