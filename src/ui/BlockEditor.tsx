@@ -18,12 +18,15 @@ function BulletsEditor({
     <>
       <SortableList list={list} items={block.items} className="space-y-1.5">
         {(bullet, i) => (
-          <div className="flex items-center gap-1">
+          <div
+            className="flex items-start gap-1 rounded-md bg-muted/40 border border-dashed p-1"
+            key={bullet.id}
+          >
             {/* the grip is the bullet marker */}
             <DragHandle />
             <Textarea
               rows={1}
-              className="h-8 flex-1"
+              className="min-h-8 flex-1"
               value={bullet.text}
               onChange={(e) =>
                 dispatch({
@@ -68,7 +71,7 @@ export function BlockEditor({
   const dispatch = useDispatch();
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 rounded-md border bg-muted/20 p-2">
       <RowControls list={parent} index={index} />
       <div className="min-w-0 flex-1 space-y-1.5">
         {block.kind === "paragraph" ? (
