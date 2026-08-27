@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RowControls, SortableList } from "./Sortable";
+import { TagsInput } from "./TagsInput";
 
 /** which fields each variant actually renders — see plan.md §3 */
 const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
@@ -109,15 +110,14 @@ export function ItemEditor({
                 })
               }
             />
-            <Input
-              className="flex-1"
+            <TagsInput
               placeholder="content"
               value={item.content}
-              onChange={(e) =>
+              onChange={(content) =>
                 dispatch({
                   type: "oneline/update",
                   id: item.id,
-                  patch: { content: e.target.value },
+                  patch: { content },
                 })
               }
             />
