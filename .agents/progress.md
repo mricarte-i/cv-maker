@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-08-26
+Last updated: 2026-08-27
 
 ---
 
@@ -381,10 +381,113 @@ The migration is exercised for free on both paths: `loadDoc()` → `parseDocumen
 → `migrate()` upgrades anything already in localStorage, and the v1 fixture
 covers the cold-start path.
 
+## Milestone 6.6 — editor chrome ✅
+
+- [x] `EditorTopbar` (in `App.tsx`) — pdf / import / export / sample / reset,
+      lifted out of the editor pane so it spans both panels
+- [x] Floating `+ section` button, bottom-right of the editor pane
+- [x] `StatusToast` — compile *and* save status in one fading pill, bottom-left
+- [x] `CompileErrorDialog` — a modal instead of an inline `<pre>`
+- [x] Bullet textareas grow again
+- [x] Borders and padding on blocks, sections, and the bullet list
+
+### The topbar was never a `position` problem
+
+It scrolled away because the layout was taller than the viewport: `#root` is
+`height: 100%`, but the panel group carried `h-screen`, so topbar + 100vh
+overflowed and the *page* got a scrollbar. Scrolling the preview then chained
+to the page once its inner scroller bottomed out.
+
+The fix is a column: topbar `shrink-0`, panel group `min-h-0 flex-1`, and the
+editor pane owns its own `overflow-y-auto`. **`min-h-0` is the load-bearing
+class** — a flex child defaults to `min-height: auto` and refuses to shrink
+below its content, so `flex-1` alone hands the page scroll straight back. Same
+trap as the `min-w-0` note above, one axis over.
+
+Both floating controls are siblings of `<aside>`, not children — the aside is
+the scroll container now, so anything `absolute` inside it scrolls away. A
+`relative h-full` wrapper is what pins them. `pb-20` on the aside keeps the FAB
+off the last section's controls.
+
+### Fixed height beats `field-sizing`
+
+Bullets stopped growing because their textarea had `h-8`. The base `Textarea`
+already auto-grows via `field-sizing-content`; a fixed `h-*` pins it and clips
+the overflow, where the paragraph textarea's `min-h-9` only sets a floor.
+`min-h-8` restored it. Worth remembering that `field-sizing` is
+Chromium-and-Firefox only — Safari falls back to `rows` plus the `min-h`, so
+the M9 phone session is where this gets a real test.
+
+### One toast, two sources
+
+Compile settles at ~220 ms and the save at ~700 ms, so two toasts in the same
+corner would have overlapping fades. `StatusToast` owns the fade mechanics and
+nothing else — it takes `{ label, settled }`, and `App` decides what the corner
+says, ordered compile-then-save so `saved` is the terminal message. `label` is
+in the effect deps, so a new message re-shows a toast that had already faded.
+
+`"could not save"` deliberately passes `settled: false`. A failed write is the
+one message that must not quietly disappear.
+
+`useAutosave` now reports `"saving" | "saved" | "failed"`, with the same `seq`
+guard `useCompiledCV` uses: an in-flight write resolving after you have typed
+again would otherwise report `saved` while a newer document is still pending.
+A `first` ref skips the boot write-back, which the localStorage version had
+been doing redundantly.
+
+### The error dialog gates on arrival, not content
+
+The preview compiles on every keystroke, so a modal keyed on the error *text*
+would reopen constantly — Typst diagnostics carry positions that move as you
+type. Instead a `seen` flag is set on dismiss and cleared when `error` goes
+null, so it speaks once per failure episode and re-arms only after a compile
+succeeds.
+
+Its body says the preview is showing the last version that worked, because
+`useCompiledCV` keeps the last good SVG on failure. Without that line the
+preview looks correct next to an error modal and the modal reads as spurious.
+
+## Milestone 6.7 — tags (`SCHEMA_VERSION` 3) ✅
+
+- [x] `TagSchema` + a `tags` item kind — `{ title, items: Tag[] }`
+- [x] v2 → v3 migration: a `oneline` whose content holds a comma becomes `tags`
+- [x] `TagsInput` — pills, comma or Enter to commit, backspace or click to edit
+- [x] `KeyboardKey` — an inline key cap for the hover hint
+- [x] `tags/update` action, `+ tags` in the item row, a `cv.typ` branch
+
+### A new kind, not a flag on `oneline`
+
+`Skills` and `Spanish → Native` were both `oneline`, which is why pills looked
+wrong on the second one. The alternative — a boolean on `oneline` — would have
+put a UI concern in the data model. A new union member matches the grain of
+`ItemSchema` and `BlockSchema`, and it stores a list as a list: a skill can now
+contain a comma, which `React (hooks, context)` previously could not.
+
+Tags carry `{ id, text }` rather than bare strings, on the M6.5 lesson —
+retrofitting ids costs a migration, and `rectSortingStrategy` already ships in
+the installed `@dnd-kit/sortable` if pills should ever be draggable. The id also
+does immediate work as a React `key`, so duplicate skill names stop colliding.
+
+**The migration heuristic is the comma.** `Skills` converts, `Native` does not.
+It would also convert something like `Available → Mon, Tue`, which on a CV is
+arguably the right reading anyway.
+
+`silver-dev-cv.typ` needed no change at all: `cv.typ` joins the tags back into
+a string and calls the same `oneline-title-item`. The split lives entirely on
+our side of the adapter.
+
+### Two guards that a second bodyless kind broke
+
+`navigate.ts` spelled out `it.kind === "oneline"` in `block()` and `list()` to
+skip items with no `body`. A second bodyless kind made that wrong, so both now
+test `"body" in it` — TypeScript narrows a discriminated union through `in`,
+and the check stops needing an edit every time a kind is added.
+
 ## Milestone 7 — Persistence ✅
 
 - [x] Autosave — `src/state/persist.ts`, 500 ms debounce (lazier than the 200 ms
-      compile, since nobody is watching the save)
+      compile, since nobody is watching the save). Reports `SaveState` for the
+      status toast — see Milestone 6.6
 - [x] Storage treated as a trust boundary — every read routes through
       `parseDocument()`, so a stale or corrupt document is logged and discarded
       rather than crashing the load
@@ -431,9 +534,9 @@ Best-effort: an IndexedDB write on the way out is not guaranteed to land.
       the blob in a new tab for the share sheet, which needs the click handler
       to open the tab *before* any `await` or the popup blocker eats it. Same
       fix serves `content.json` export, so solve it once for both.
-- [ ] Confirm Libertinus actually embeds. `loadFonts` runs at init, but PDF
-      embedding is a different path from SVG glyph rendering — the download
-      working is not evidence the faces made it in.
+- [x] Libertinus embeds correctly — verified in the downloaded PDF. Worth having
+      checked: `loadFonts` runs at init, but PDF embedding is a different path
+      from SVG glyph rendering, so a good-looking download was not evidence.
 
 ### The PDF path skips the renderer entirely
 
