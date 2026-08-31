@@ -114,43 +114,63 @@ function SortableRow({
   );
 }
 
-export function DragHandle() {
+export function DragHandle({ marker }: { marker?: React.ReactNode }) {
   const s = useContext(RowCtx);
   if (!s) {
     throw new Error("DragHandle must be used inside a SortableList");
   }
 
   return (
-    <Button
+    <button
+      type="button"
       ref={s.setActivatorNodeRef}
-      variant="ghost"
-      size="icon-xs"
-      // touch-none is required
-      className="touch-none cursor-grab active:cursor-grabbing"
+      className={cn(
+        // touch-none is required
+        "flex size-5 shrink-0 touch-none items-center justify-center rounded-sm",
+        "cursor-grab text-pencil transition-colors active:cursor-grabbing",
+        "hover:bg-muted hover:text-foreground focus-visible:bg-muted focus-visible:outline-none",
+      )}
       {...s.attributes}
       {...s.listeners}
       aria-label="reorder"
     >
-      <GripVertical />
-    </Button>
+      {marker == null ? (
+        <GripVertical className="size-3.5" />
+      ) : (
+        <>
+          <span className="group-hover/row:hidden group-focus-within/row:hidden">
+            {marker}
+          </span>
+          <GripVertical className="size-3.5 hidden group-hover/row:block group-focus-within/row:block" />
+        </>
+      )}
+    </button>
   );
 }
 
-export function RowControls({ list, index }: { list: ListRef; index: number }) {
+export function RowDelete({
+  list,
+  index,
+  className,
+}: {
+  list: ListRef;
+  index: number;
+  className?: string;
+}) {
   const dispatch = useDispatch();
 
   return (
-    <div className="flex shrink-0 items-start gap-0.5">
-      <DragHandle />
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        aria-label="remove"
-        onClick={() => dispatch({ type: "list/remove", list, index })}
-        className="hover:bg-destructive hover:text-primary-foreground"
-      >
-        <Trash />
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      aria-label="remove"
+      onClick={() => dispatch({ type: "list/remove", list, index })}
+      className={cn(
+        "size-5 text-pencil hover:bg-destructive hover:text-primary-foreground",
+        className,
+      )}
+    >
+      <Trash />
+    </Button>
   );
 }

@@ -1,19 +1,13 @@
+import { cn } from "@/lib/utils";
 import type { Block, EntryVariant, Item } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import type { EntryPatch } from "../state/reducer";
 import { useDispatch } from "./dispatch";
 import { BlockEditor } from "./BlockEditor";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { RowControls, SortableList } from "./Sortable";
+import { DragHandle, RowDelete, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
+import { AddButton, Chip, FIELD, Mark, Rail, Row, TEXT } from "./Row";
 
 /** which fields each variant actually renders — see plan.md §3 */
 const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
@@ -22,47 +16,61 @@ const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
   project: [],
 };
 
+const NEXT: Record<EntryVariant, EntryVariant> = {
+  job: "education",
+  education: "project",
+  project: "job",
+};
+
+const CHIP: Record<EntryVariant, string> = {
+  job: "job",
+  education: "edu",
+  project: "prj",
+};
+
 function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
   const dispatch = useDispatch();
   const parent: ListRef = { kind: "blocks", itemId };
 
   return (
-    <div className="space-y-2">
-      <SortableList list={parent} items={body} className="space-y-2">
+    <Rail>
+      <SortableList list={parent} items={body}>
         {(b, i) => <BlockEditor block={b} parent={parent} index={i} />}
       </SortableList>
 
-      <div className="flex gap-2 border p-1 bg-muted/20">
+      <div className="flex gap-1 pl-6">
         {(["paragraph", "bullets"] as const).map((kind) => (
-          <Button
+          <AddButton
             key={kind}
-            variant="outline"
-            size="xs"
             onClick={() => dispatch({ type: "block/add", itemId, kind })}
           >
             + {kind}
-          </Button>
+          </AddButton>
         ))}
       </div>
-    </div>
+    </Rail>
   );
 }
 
-/** every item kind gets the same frame: controls on the left, fields on the right */
+/** every item kind gets the same frame: a copy-mark in the gutter, fields right */
 function Shell({
   parent,
   index,
+  mark,
   children,
 }: {
   parent: ListRef;
   index: number;
+  mark: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-2 border p-3">
-      <RowControls list={parent} index={index} />
-      <div className="min-w-0 flex-1 space-y-2">{children}</div>
-    </div>
+    <Row
+      marker={<DragHandle marker={<Mark>{mark}</Mark>} />}
+      end={<RowDelete list={parent} index={index} />}
+    >
+      {children}
+    </Row>
   );
 }
 
@@ -81,16 +89,16 @@ export function ItemEditor({
   switch (item.kind) {
     case "prose":
       return (
-        <Shell {...frame}>
+        <Shell {...frame} mark="¶">
           <BodyEditor itemId={item.id} body={item.body} />
         </Shell>
       );
     case "tags":
       return (
-        <Shell {...frame}>
-          <div className="grid gap-2">
+        <Shell {...frame} mark="#">
+          <div className="flex min-w-0 items-start gap-2">
             <Input
-              className="w-full"
+              className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
               placeholder="title"
               value={item.title}
               onChange={(e) =>
@@ -113,10 +121,10 @@ export function ItemEditor({
 
     case "oneline":
       return (
-        <Shell {...frame}>
+        <Shell {...frame} mark="–">
           <div className="flex gap-2">
             <Input
-              className="w-40"
+              className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
               placeholder="title"
               value={item.title}
               onChange={(e) =>
@@ -128,6 +136,7 @@ export function ItemEditor({
               }
             />
             <Input
+              className={cn("h-7", TEXT, FIELD)}
               placeholder="content"
               value={item.content}
               onChange={(e) =>
@@ -147,32 +156,23 @@ export function ItemEditor({
       const uses = USES[item.variant];
 
       return (
-        <Shell {...frame}>
-          <Select
-            value={item.variant}
-            onValueChange={(v) => set({ variant: v as EntryVariant })}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(["job", "education", "project"] as const).map((v) => (
-                <SelectItem key={v} value={v}>
-                  {v}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="grid grid-cols-2 gap-2">
+        <Shell {...frame} mark="▪">
+          <div className="flex items-baseline gap-1">
+            <Chip onClick={() => set({ variant: NEXT[item.variant] })}>
+              {CHIP[item.variant]}
+            </Chip>
             <Input
-              className="col-span-2"
               placeholder="title"
+              className={cn("h-7 font-serif font-bold", TEXT, FIELD)}
               value={item.title}
               onChange={(e) => set({ title: e.target.value })}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-3 pl-1">
             {uses.includes("subtitle") && (
               <Input
+                className={cn("h-7 font-serif italic", TEXT, FIELD)}
                 placeholder="subtitle"
                 value={item.subtitle}
                 onChange={(e) => set({ subtitle: e.target.value })}
@@ -180,12 +180,14 @@ export function ItemEditor({
             )}
             <Input
               placeholder="date"
+              className={cn("h-7", TEXT, FIELD)}
               value={item.date}
               onChange={(e) => set({ date: e.target.value })}
             />
             {uses.includes("location") && (
               <Input
                 placeholder="location"
+                className={cn("h-7", TEXT, FIELD)}
                 value={item.location}
                 onChange={(e) => set({ location: e.target.value })}
               />

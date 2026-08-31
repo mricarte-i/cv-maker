@@ -171,7 +171,7 @@ function Editor({ initial }: { initial: CVDocument }) {
         >
           <ResizablePanel id="editor" defaultSize="50" minSize="25">
             <div className="relative h-full">
-              <aside className="h-full space-y-4 overflow-y-auto p-4">
+              <aside className="h-full space-y-4 overflow-y-auto py-4 pr-4 pl-8">
                 <div className="grid gap-2">
                   {FIELDS.map((field) => (
                     <div key={field} className="grid gap-1 border p-2">
@@ -200,11 +200,7 @@ function Editor({ initial }: { initial: CVDocument }) {
 
                 <hr />
 
-                <SortableList
-                  list={{ kind: "sections" }}
-                  items={doc.sections}
-                  className="space-y-4"
-                >
+                <SortableList list={{ kind: "sections" }} items={doc.sections}>
                   {(s, i) => <SectionEditor section={s} index={i} />}
                 </SortableList>
               </aside>

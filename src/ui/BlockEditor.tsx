@@ -1,14 +1,12 @@
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { Block } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
-import { DragHandle, RowControls, SortableList } from "./Sortable";
-import { Trash } from "lucide-react";
+import { DragHandle, RowDelete, SortableList } from "./Sortable";
+import { AddButton, FIELD, Mark, Row, TEXT } from "./Row";
 
-import { cn } from "@/lib/utils";
-
-function BulletsEditor({
+function BulletsList({
   block,
 }: {
   block: Extract<Block, { kind: "bullets" }>;
@@ -17,52 +15,29 @@ function BulletsEditor({
   const list: ListRef = { kind: "bullets", blockId: block.id };
 
   return (
-    <div className="px-3 pt-3">
-      <SortableList list={list} items={block.items}>
-        {(bullet, i) => (
-          <div
-            className="flex items-start gap-1 bg-muted/40 border border-dashed p-1 mt-2"
-            key={bullet.id}
-          >
-            {/* the grip is the bullet marker */}
-            <DragHandle />
-            <Textarea
-              rows={1}
-              className="min-h-8 flex-1"
-              value={bullet.text}
-              onChange={(e) =>
-                dispatch({
-                  type: "bullet/update",
-                  blockId: block.id,
-                  index: i,
-                  text: e.target.value,
-                })
-              }
-            />
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="remove"
-              onClick={() => dispatch({ type: "list/remove", list, index: i })}
-              className="hover:bg-destructive hover:text-primary-foreground"
-            >
-              <Trash />
-            </Button>
-          </div>
-        )}
-      </SortableList>
-      <Button
-        variant="outline"
-        size="xs"
-        onClick={() => dispatch({ type: "bullet/add", blockId: block.id })}
-        className={cn(
-          "border-dashed border w-full mt-2 bg-black/30 text-primary-foreground",
-          "hover:bg-chart-2 hover:text-primary-foreground",
-        )}
-      >
-        + bullet
-      </Button>
-    </div>
+    <SortableList list={list} items={block.items}>
+      {(bullet, i) => (
+        <Row
+          marker={<DragHandle marker={<Mark>•</Mark>} />}
+          end={<RowDelete list={list} index={i} />}
+        >
+          <Textarea
+            rows={1}
+            placeholder="bullet"
+            className={cn(TEXT, FIELD)}
+            value={bullet.text}
+            onChange={(e) =>
+              dispatch({
+                type: "bullet/update",
+                blockId: block.id,
+                index: i,
+                text: e.target.value,
+              })
+            }
+          />
+        </Row>
+      )}
+    </SortableList>
   );
 }
 
@@ -77,27 +52,51 @@ export function BlockEditor({
 }) {
   const dispatch = useDispatch();
 
+  if (block.kind === "paragraph") {
+    return (
+      <Row
+        marker={<DragHandle marker={<Mark>¶</Mark>} />}
+        end={<RowDelete list={parent} index={index} />}
+      >
+        <Textarea
+          rows={1}
+          placeholder="paragraph"
+          className={cn(TEXT, FIELD)}
+          value={block.text}
+          onChange={(e) =>
+            dispatch({
+              type: "paragraph/update",
+              id: block.id,
+              text: e.target.value,
+            })
+          }
+        />
+      </Row>
+    );
+  }
+
+  // bullets block
+  // only bullets get rows, so a bullet sits at the same depth as a paragraph
+  // the block's own grip and delte live on the trailing line, which
+  // is the one gutter the bullets don't own
   return (
-    <div className="flex gap-2 border bg-muted/20 p-2">
-      <RowControls list={parent} index={index} />
-      <div className="min-w-0 flex-1 space-y-1.5">
-        {block.kind === "paragraph" ? (
-          <Textarea
-            rows={1}
-            className="min-h-9 resize-none"
-            value={block.text}
-            onChange={(e) =>
-              dispatch({
-                type: "paragraph/update",
-                id: block.id,
-                text: e.target.value,
-              })
-            }
-          />
-        ) : (
-          <BulletsEditor block={block} />
-        )}
-      </div>
+    <div>
+      <BulletsList block={block} />
+      <Row end={<RowDelete list={parent} index={index} />}>
+        <AddButton
+          onClick={() => dispatch({ type: "bullet/add", blockId: block.id })}
+        >
+          <span
+            className={cn(
+              "text-secondary-foreground bg-muted/40 w-50 rounded-sm px-5 text-center",
+              "group-hover/row:text-chart-5 group-focus-within/row:text-chart-5",
+              TEXT,
+            )}
+          >
+            + bullet
+          </span>
+        </AddButton>
+      </Row>
     </div>
   );
 }
