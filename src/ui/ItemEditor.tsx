@@ -6,9 +6,10 @@ import type { EntryPatch } from "../state/reducer";
 import { useDispatch } from "./dispatch";
 import { BlockEditor } from "./BlockEditor";
 import { Input } from "@/components/ui/input";
-import { DragHandle, RowDelete, SortableList } from "./Sortable";
+import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
-import { AddButton, Chip, FIELD, Mark, Rail, Row, TEXT } from "./Row";
+import { Chip, FIELD, Mark, Rail, Row, TEXT } from "./Row";
+import { AddMenu } from "./Menu";
 
 type Field = "title" | "subtitle" | "date" | "location";
 
@@ -98,15 +99,16 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
         {(b, i) => <BlockEditor block={b} parent={parent} index={i} />}
       </SortableList>
 
-      <div className="flex gap-1 pl-6">
-        {(["paragraph", "bullets"] as const).map((kind) => (
-          <AddButton
-            key={kind}
-            onClick={() => dispatch({ type: "block/add", itemId, kind })}
-          >
-            + {kind}
-          </AddButton>
-        ))}
+      <div className="pl-6">
+        <AddMenu
+          options={
+            [
+              { value: "paragraph", label: "Paragraph", mark: "¶" },
+              { value: "bullets", label: "Bullet list", mark: "•" },
+            ] as const
+          }
+          onPick={(kind) => dispatch({ type: "block/add", itemId, kind })}
+        />
       </div>
     </Rail>
   );
@@ -147,10 +149,21 @@ function Shell({
   kind: Item["kind"];
   children: React.ReactNode;
 }) {
+  const dispatch = useDispatch();
+  const sectionId = parent.kind === "items" ? parent.sectionId : null;
+
   return (
     <Row
       marker={<DragHandle marker={<Mark>{MARK[kind]}</Mark>} />}
-      end={<RowDelete list={parent} index={index} />}
+      end={
+        <RowMenu
+          duplicate={
+            sectionId
+              ? () => dispatch({ type: "item/duplicate", sectionId, index })
+              : undefined
+          }
+        />
+      }
     >
       {children}
     </Row>

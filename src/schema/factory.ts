@@ -69,3 +69,27 @@ export const emptySection = (): Section => ({
   label: "",
   items: [],
 });
+
+const copyBlock = (b: Block): Block =>
+  b.kind === "paragraph"
+    ? { ...b, id: newId() }
+    : { ...b, id: newId(), items: b.items.map((x) => ({ ...x, id: newId() })) };
+
+/** a copy has to remint every id: React keys and navigate() both look rows up
+    by id, so a duplicate sharing them would silently edit the original */
+export const copyItem = (it: Item): Item => {
+  const base = { ...it, id: newId() };
+  if ("body" in base) {
+    return { ...base, body: base.body.map(copyBlock) };
+  }
+  if (base.kind === "tags") {
+    return { ...base, items: base.items.map((t) => ({ ...t, id: newId() })) };
+  }
+  return base;
+};
+
+export const copySection = (s: Section): Section => ({
+  ...s,
+  id: newId(),
+  items: s.items.map(copyItem),
+});

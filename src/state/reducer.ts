@@ -1,6 +1,8 @@
-import { produce, type Draft } from "immer";
+import { current, produce, type Draft } from "immer";
 import type { Block, Contact, CVDocument, Item } from "../schema/cv";
 import {
+  copyItem,
+  copySection,
   emptyBullet,
   emptyBullets,
   emptyContact,
@@ -28,6 +30,10 @@ export type Action =
   | { type: "item/add"; sectionId: string; kind: Item["kind"] }
   | { type: "block/add"; itemId: string; kind: Block["kind"]; at?: number }
   | { type: "bullet/add"; blockId: string; at?: number }
+
+  // duplicates resolve their list directly, same reason the adds do
+  | { type: "section/duplicate"; index: number }
+  | { type: "item/duplicate"; sectionId: string; index: number }
 
   // patches: each carries a different shape
   | { type: "contact/update"; id: string; patch: Partial<Omit<Contact, "id">> }
@@ -89,6 +95,22 @@ const edit = produce(
         const b = block(doc, a.blockId);
         if (b?.kind === "bullets") {
           b.items.splice(a.at ?? b.items.length, 0, emptyBullet());
+        }
+        break;
+      }
+
+      case "section/duplicate": {
+        const s = doc.sections[a.index];
+        if (s) {
+          doc.sections.splice(a.index + 1, 0, copySection(current(s)));
+        }
+        break;
+      }
+      case "item/duplicate": {
+        const items = section(doc, a.sectionId)?.items;
+        const it = items?.[a.index];
+        if (items && it) {
+          items.splice(a.index + 1, 0, copyItem(current(it)));
         }
         break;
       }

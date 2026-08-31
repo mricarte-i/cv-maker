@@ -3,12 +3,12 @@ import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 import { ItemEditor, MARK } from "./ItemEditor";
 import { Input } from "@/components/ui/input";
-import { DragHandle, RowDelete, SortableList } from "./Sortable";
-import { AddButton, Rail } from "./Row";
+import { DragHandle, RowMenu, SortableList } from "./Sortable";
+import { Rail } from "./Row";
 
-import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { AddMenu } from "./Menu";
 
 const SUMMARY_LIMIT = 8;
 
@@ -83,10 +83,8 @@ export function SectionEditor({
 
         {!open && <Summary items={section.items} />}
 
-        <RowDelete
-          list={{ kind: "sections" }}
-          index={index}
-          className="shrink-0 opacity-0 transition-opacity group-hover/section:opacity-100 group-focus-within/section:opacity-100"
+        <RowMenu
+          duplicate={() => dispatch({ type: "section/duplicate", index })}
         />
       </div>
 
@@ -96,17 +94,20 @@ export function SectionEditor({
             {(it, i) => <ItemEditor item={it} parent={items} index={i} />}
           </SortableList>
 
-          <div className="flex gap-1 pl-6">
-            {(["entry", "oneline", "tags", "prose"] as const).map((kind) => (
-              <AddButton
-                key={kind}
-                onClick={() =>
-                  dispatch({ type: "item/add", sectionId: section.id, kind })
-                }
-              >
-                + {kind}
-              </AddButton>
-            ))}
+          <div className="pl-6">
+            <AddMenu
+              options={
+                [
+                  { value: "entry", label: "Entry", mark: MARK.entry },
+                  { value: "oneline", label: "One line", mark: MARK.oneline },
+                  { value: "tags", label: "Tags", mark: MARK.tags },
+                  { value: "prose", label: "Prose", mark: MARK.prose },
+                ] as const
+              }
+              onPick={(kind) =>
+                dispatch({ type: "item/add", sectionId: section.id, kind })
+              }
+            />
           </div>
         </Rail>
       )}

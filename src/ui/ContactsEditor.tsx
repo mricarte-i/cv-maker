@@ -3,7 +3,7 @@ import type { Contact } from "../schema/cv";
 import { cn } from "@/lib/utils";
 import { useDispatch } from "./dispatch";
 import { Input } from "@/components/ui/input";
-import { DragHandle, RowDelete, SortableList } from "./Sortable";
+import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { AddButton, FIELD, Mark, Row, TEXT } from "./Row";
 import { focusAfterRender, rowKey, useFocusClaim } from "./focus";
 
@@ -47,10 +47,7 @@ function ContactRow({
   };
 
   return (
-    <Row
-      marker={<DragHandle marker={<Mark>@</Mark>} />}
-      end={<RowDelete list={CONTACTS} index={index} />}
-    >
+    <Row marker={<DragHandle marker={<Mark>@</Mark>} />} end={<RowMenu />}>
       <div className="flex min-w-0 items-baseline gap-2">
         <Input
           ref={ref}

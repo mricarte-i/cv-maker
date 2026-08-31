@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { Block, Bullet } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
-import { DragHandle, RowDelete, SortableList } from "./Sortable";
+import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { AddButton, FIELD, Mark, Row, TEXT } from "./Row";
 import { focusAfterRender, rowKey, useFocusClaim } from "./focus";
 
@@ -46,10 +46,7 @@ function BulletRow({
   };
 
   return (
-    <Row
-      marker={<DragHandle marker={<Mark>•</Mark>} />}
-      end={<RowDelete list={list} index={index} />}
-    >
+    <Row marker={<DragHandle marker={<Mark>•</Mark>} />} end={<RowMenu />}>
       <Textarea
         ref={ref}
         rows={1}
@@ -124,10 +121,7 @@ export function BlockEditor({
 
   if (block.kind === "paragraph") {
     return (
-      <Row
-        marker={<DragHandle marker={<Mark>¶</Mark>} />}
-        end={<RowDelete list={parent} index={index} />}
-      >
+      <Row marker={<DragHandle marker={<Mark>¶</Mark>} />} end={<RowMenu />}>
         <ParagraphRow block={block} itemId={itemId} index={index} />
       </Row>
     );
@@ -155,15 +149,7 @@ export function BlockEditor({
         )}
       </SortableList>
 
-      <Row
-        end={
-          // only meaningful once the list is empty, where it can't be mistaken
-          // for deleting a bullet
-          block.items.length === 0 ? (
-            <RowDelete list={parent} index={index} />
-          ) : undefined
-        }
-      >
+      <Row end={<RowMenu />}>
         <AddButton
           onClick={() => dispatch({ type: "bullet/add", blockId: block.id })}
         >
