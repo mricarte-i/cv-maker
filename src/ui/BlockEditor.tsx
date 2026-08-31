@@ -82,19 +82,19 @@ export function BlockEditor({
   return (
     <div>
       <BulletsList block={block} />
-      <Row end={<RowDelete list={parent} index={index} />}>
+      <Row
+        end={
+          // only meaningful once the list is empty, where it can't be mistaken
+          // for deleting a bullet
+          block.items.length === 0 ? (
+            <RowDelete list={parent} index={index} />
+          ) : undefined
+        }
+      >
         <AddButton
           onClick={() => dispatch({ type: "bullet/add", blockId: block.id })}
         >
-          <span
-            className={cn(
-              "text-secondary-foreground bg-muted/40 w-50 rounded-sm px-5 text-center",
-              "group-hover/row:text-chart-5 group-focus-within/row:text-chart-5",
-              TEXT,
-            )}
-          >
-            + bullet
-          </span>
+          + bullet
         </AddButton>
       </Row>
     </div>

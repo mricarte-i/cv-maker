@@ -61,7 +61,8 @@
   --chart-3: oklch(0.646 0.222 41.116);
   --chart-4: oklch(0.553 0.195 38.402);
   --chart-5: oklch(0.47 0.157 37.304);
-  --paper: oklch(0.995 0.002 90);
+  --paper: oklch(0.945 0.003 80);
+  --rule: oklch(0.3 0.006 50);
   --pencil: oklch(0.68 0.012 60);
   --rail: oklch(0.9 0.004 60);
   --rail-lit: oklch(0.72 0.09 38);
@@ -77,41 +78,36 @@
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.25);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.216 0.006 56.043);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.216 0.006 56.043);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.47 0.157 37.304);
-  --primary-foreground: oklch(0.98 0.016 73.684);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.268 0.007 34.298);
-  --muted-foreground: oklch(0.709 0.01 56.259);
-  --accent: oklch(0.47 0.157 37.304);
-  --accent-foreground: oklch(0.98 0.016 73.684);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.553 0.013 58.071);
-  --chart-1: oklch(0.837 0.128 66.29);
-  --chart-2: oklch(0.705 0.213 47.604);
-  --chart-3: oklch(0.646 0.222 41.116);
-  --chart-4: oklch(0.553 0.195 38.402);
-  --chart-5: oklch(0.47 0.157 37.304);
-  --paper: oklch(0.185 0.005 49);
-  --pencil: oklch(0.5 0.012 60);
-  --rail: oklch(1 0 0 / 12%);
-  --rail-lit: oklch(0.6 0.11 38);
-  --sidebar: oklch(0.216 0.006 56.043);
-  --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: oklch(0.705 0.213 47.604);
-  --sidebar-primary-foreground: oklch(0.98 0.016 73.684);
-  --sidebar-accent: oklch(0.268 0.007 34.298);
-  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.553 0.013 58.071);
+  /* lamplit desk. nothing here is black: a white page is on screen at all
+     times, and a near-black shell turns the preview into a floodlight. */
+  --background: oklch(0.235 0.006 60);
+  --foreground: oklch(0.93 0.006 75);
+  --card: oklch(0.285 0.007 60);
+  --card-foreground: oklch(0.93 0.006 75);
+  --popover: oklch(0.285 0.007 60);
+  --popover-foreground: oklch(0.93 0.006 75);
+  /* the accent gains lightness on a dark ground; it does not lose it */
+  --primary: oklch(0.68 0.115 55);
+  --primary-foreground: oklch(0.2 0.012 55);
+  --secondary: oklch(0.32 0.008 60);
+  --secondary-foreground: oklch(0.93 0.006 75);
+  --muted: oklch(0.31 0.008 60);
+  --muted-foreground: oklch(0.7 0.012 65);
+  --accent: oklch(0.68 0.115 55);
+  --accent-foreground: oklch(0.2 0.012 55);
+  --destructive: oklch(0.63 0.16 25);
+  /* real values, not white-alpha: alpha borders compose differently over
+     every surface they land on and disappear on --card */
+  --border: oklch(0.4 0.008 60);
+  --input: oklch(0.42 0.008 60);
+  --ring: oklch(0.72 0.1 55);
+  --paper: oklch(0.285 0.007 60);
+  --pencil: oklch(0.63 0.012 65);
+  --rail: oklch(0.36 0.006 60);
+  /* ember, not alarm-red — see the note above */
+  --rail-lit: oklch(0.7 0.09 58);
+  /* the rule dims *below* its label here, where in light mode it sits above */
+  --rule: oklch(0.5 0.008 60);
 }
 
 @theme inline {
@@ -156,6 +152,7 @@
   --color-pencil: var(--pencil);
   --color-rail: var(--rail);
   --color-rail-lit: var(--rail-lit);
+  --color-rule: var(--rule);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

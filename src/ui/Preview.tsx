@@ -40,7 +40,7 @@ export function Preview({ svg }: { svg: string }) {
       </div>
 
       {svg && (
-        <div className="bg-muted min-h-0 flex-1 overflow-auto p-6">
+        <div className="bg-paper min-h-0 flex-1 overflow-auto p-6">
           <div
             className="mx-auto bg-white shadow-lg [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
             style={{ width: `${zoom * 100}%` }}

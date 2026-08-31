@@ -9,11 +9,14 @@ import { DragHandle, RowDelete, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
 import { AddButton, Chip, FIELD, Mark, Rail, Row, TEXT } from "./Row";
 
-/** which fields each variant actually renders — see plan.md §3 */
-const USES: Record<EntryVariant, ("subtitle" | "location")[]> = {
-  job: ["subtitle", "location"],
-  education: ["subtitle", "location"],
-  project: [],
+type Slot = "title" | "subtitle" | "date" | "location" | null;
+
+/** plan.md §3 — the same four fields land in different slots per variant */
+const SLOTS: Record<EntryVariant, [Slot, Slot, Slot, Slot]> = {
+  //             top-left   top-right   bottom-left  bottom-right
+  job: ["title", "location", "subtitle", "date"],
+  education: ["title", "date", "subtitle", null],
+  project: ["title", "date", null, null],
 };
 
 const NEXT: Record<EntryVariant, EntryVariant> = {
@@ -153,7 +156,7 @@ export function ItemEditor({
     case "entry": {
       const set = (patch: EntryPatch) =>
         dispatch({ type: "entry/update", id: item.id, patch });
-      const uses = USES[item.variant];
+      const slots = SLOTS[item.variant];
 
       return (
         <Shell {...frame} mark="▪">
@@ -170,7 +173,7 @@ export function ItemEditor({
           </div>
 
           <div className="grid grid-cols-2 gap-x-3 pl-1">
-            {uses.includes("subtitle") && (
+            {slots.includes("subtitle") && (
               <Input
                 className={cn("h-7 font-serif italic", TEXT, FIELD)}
                 placeholder="subtitle"
@@ -184,7 +187,7 @@ export function ItemEditor({
               value={item.date}
               onChange={(e) => set({ date: e.target.value })}
             />
-            {uses.includes("location") && (
+            {slots.includes("location") && (
               <Input
                 placeholder="location"
                 className={cn("h-7", TEXT, FIELD)}

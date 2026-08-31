@@ -21,9 +21,11 @@ import {
 import { ContactsEditor } from "./ui/ContactsEditor";
 import { Preview } from "./ui/Preview";
 import { SortableList } from "./ui/Sortable";
-import { Plus } from "lucide-react";
+import { Monitor, Moon, Plus, Sun } from "lucide-react";
 import { StatusToast } from "./ui/StatusToast";
 import { CompileErrorDialog } from "./ui/CompileErrorDialog";
+import { cn } from "./lib/utils";
+import { useTheme } from "./ui/theme";
 
 const FIELDS = ["name", "address", "date"] as const;
 
@@ -48,6 +50,33 @@ function App() {
     );
   }
   return <Editor initial={initial} />;
+}
+
+const Rule = () => <div className="mx-1 h-4 w-px bg-border" />;
+
+/** the secondary actions: same button, none of the shouting */
+function Quiet({
+  onClick,
+  className,
+  children,
+}: {
+  onClick: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="xs"
+      onClick={onClick}
+      className={cn(
+        "font-normal tracking-normal text-pencil normal-case",
+        className,
+      )}
+    >
+      {children}
+    </Button>
+  );
 }
 
 function EditorTopbar({
@@ -90,23 +119,25 @@ function EditorTopbar({
     }
   };
 
+  const { theme, cycle } = useTheme();
+  const ThemeIcon =
+    theme === "system" ? Monitor : theme === "dark" ? Moon : Sun;
+
   return (
-    <div className="flex shrink-0 items-center justify-between p-4">
-      <h1 className="text-sm font-medium">cv-maker</h1>
-      <div className="flex gap-1">
-        <Button variant="outline" size="xs" disabled={pdfBusy} onClick={onPdf}>
-          {pdfBusy ? "…" : "pdf"}
+    <header className="flex h-11 shrink-0 items-center justify-between border-b px-4">
+      <h1 className="font-serif text-base font-bold tracking-[0.14em] uppercase">
+        cv-maker
+      </h1>
+
+      <div className="flex items-center gap-0.5">
+        <Button size="xs" disabled={pdfBusy} onClick={onPdf}>
+          {pdfBusy ? "compiling…" : "download pdf"}
         </Button>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() => fileInput.current?.click()}
-        >
-          import
-        </Button>
-        <Button variant="ghost" size="xs" onClick={() => exportDocument(doc)}>
-          export
-        </Button>
+
+        <Rule />
+
+        <Quiet onClick={() => fileInput.current?.click()}>import</Quiet>
+        <Quiet onClick={() => exportDocument(doc)}>export</Quiet>
         <input
           ref={fileInput}
           type="file"
@@ -114,29 +145,42 @@ function EditorTopbar({
           className="hidden"
           onChange={onPick}
         />
-        <Button
-          variant="ghost"
-          size="xs"
+
+        <Rule />
+
+        <Quiet
           onClick={() =>
             replace(sampleDocument, "Replace this CV with the sample?")
           }
         >
           sample
-        </Button>
-        <Button
-          variant="ghost"
-          size="xs"
+        </Quiet>
+        <Quiet
           onClick={() =>
             replace(
               emptyDocument,
               "Discard this CV and start over? This cannot be undone.",
             )
           }
+          className="hover:bg-destructive/10 hover:text-destructive"
         >
           reset
+        </Quiet>
+
+        <Rule />
+
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Theme: ${theme}. Click to change.`}
+          title={`theme: ${theme}`}
+          onClick={cycle}
+          className="text-pencil hover:text-foreground"
+        >
+          <ThemeIcon />
         </Button>
       </div>
-    </div>
+    </header>
   );
 }
 

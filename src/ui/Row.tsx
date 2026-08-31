@@ -50,9 +50,17 @@ export function Row({
   );
 }
 
-export function Mark({ children }: { children: React.ReactNode }) {
+export function Mark({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <span className="font-serif text-sm leading-4 text-pencil">{children}</span>
+    <span className={cn("font-serif text-sm leading-4 text-pencil", className)}>
+      {children}
+    </span>
   );
 }
 

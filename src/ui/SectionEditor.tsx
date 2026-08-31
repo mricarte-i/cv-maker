@@ -30,7 +30,7 @@ export function SectionEditor({
         <DragHandle />
       </div>
 
-      <div className="flex items-end gap-1 border-b border-foreground/70 pb-0.5">
+      <div className="flex items-end gap-1 border-b border-rule pb-0.5">
         <Input
           placeholder="section"
           value={section.label}
