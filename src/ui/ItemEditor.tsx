@@ -74,6 +74,14 @@ const NEXT: Record<EntryVariant, EntryVariant> = {
   project: "job",
 };
 
+/** the copy-mark per item kind — also what a collapsed section summarises with */
+export const MARK: Record<Item["kind"], string> = {
+  entry: "▪",
+  oneline: "–",
+  tags: "#",
+  prose: "¶",
+};
+
 const CHIP: Record<EntryVariant, string> = {
   job: "job",
   education: "edu",
@@ -131,17 +139,17 @@ function EntryField({
 function Shell({
   parent,
   index,
-  mark,
+  kind,
   children,
 }: {
   parent: ListRef;
   index: number;
-  mark: string;
+  kind: Item["kind"];
   children: React.ReactNode;
 }) {
   return (
     <Row
-      marker={<DragHandle marker={<Mark>{mark}</Mark>} />}
+      marker={<DragHandle marker={<Mark>{MARK[kind]}</Mark>} />}
       end={<RowDelete list={parent} index={index} />}
     >
       {children}
@@ -164,13 +172,13 @@ export function ItemEditor({
   switch (item.kind) {
     case "prose":
       return (
-        <Shell {...frame} mark="¶">
+        <Shell {...frame} kind={item.kind}>
           <BodyEditor itemId={item.id} body={item.body} />
         </Shell>
       );
     case "tags":
       return (
-        <Shell {...frame} mark="#">
+        <Shell {...frame} kind={item.kind}>
           <div className="flex min-w-0 items-start gap-2">
             <Input
               className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
@@ -196,7 +204,7 @@ export function ItemEditor({
 
     case "oneline":
       return (
-        <Shell {...frame} mark="–">
+        <Shell {...frame} kind={item.kind}>
           <div className="flex gap-2">
             <Input
               className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
@@ -255,7 +263,7 @@ export function ItemEditor({
       );
 
       return (
-        <Shell {...frame} mark="▪">
+        <Shell {...frame} kind={item.kind}>
           {/* the same two-line, four-slot geometry the template prints */}
           <div className="flex items-baseline gap-2">
             <Chip onClick={() => set({ variant: NEXT[item.variant] })}>

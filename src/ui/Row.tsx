@@ -8,14 +8,16 @@ export const FIELD =
 export const TEXT = "min-h-0 py-0.5 text-sm leading-6";
 
 export function Rail({
+  id,
   className,
   children,
 }: {
+  id?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("rail relative min-w-0 pl-1.5", className)}>
+    <div id={id} className={cn("rail relative min-w-0 pl-1.5", className)}>
       {children}
     </div>
   );
