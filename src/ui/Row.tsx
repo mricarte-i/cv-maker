@@ -44,6 +44,9 @@ export function Row({
         className={cn(
           "flex w-6 shrink-0 justify-center pt-0.5 opacity-0 transition-opacity",
           "group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+          // there is no hover on touch, and RowMenu is the only path to
+          // reorder or delete a row you cannot focus without a side effect
+          "pointer-coarse:opacity-100",
         )}
       >
         {end}
