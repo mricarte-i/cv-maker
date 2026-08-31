@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useReducer,
   useRef,
@@ -26,7 +27,15 @@ import {
 import { ContactsEditor } from "./ui/ContactsEditor";
 import { Preview } from "./ui/Preview";
 import { SortableList } from "./ui/Sortable";
-import { Monitor, MoreHorizontal, Moon, Plus, Sun } from "lucide-react";
+import {
+  Monitor,
+  MoreHorizontal,
+  Moon,
+  Plus,
+  Sun,
+  Redo2,
+  Undo2,
+} from "lucide-react";
 import { StatusToast } from "./ui/StatusToast";
 import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { cn } from "./lib/utils";
@@ -40,6 +49,7 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "./ui/Menu";
+import { useHistory } from "./state/history";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -133,11 +143,19 @@ function EditorTopbar({
   dispatch,
   tab,
   setTab,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
 }: {
   doc: CVDocument;
   dispatch: React.ActionDispatch<[a: Action]>;
   tab: Tab;
   setTab: (t: Tab) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }) {
   const replace = (make: () => CVDocument, prompt: string) => {
     if (window.confirm(prompt)) {
@@ -185,6 +203,29 @@ function EditorTopbar({
       <TabSwitch tab={tab} setTab={setTab} />
 
       <div className="ml-auto flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Undo"
+          aria-keyshortcuts="Control+Z Meta+Z"
+          disabled={!canUndo}
+          onClick={undo}
+          className="text-pencil hover:text-foreground"
+        >
+          <Undo2 />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Redo"
+          aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
+          disabled={!canRedo}
+          onClick={redo}
+          className="text-pencil hover:text-foreground"
+        >
+          <Redo2 />
+        </Button>
+
         <Button size="xs" disabled={pdfBusy} onClick={onPdf}>
           {pdfBusy ? "compiling…" : "download pdf"}
         </Button>
@@ -328,7 +369,7 @@ function EditorPane({ doc }: { doc: CVDocument }) {
 function Editor({ initial }: { initial: CVDocument }) {
   const [tab, setTab] = useState<Tab>("write");
   const wide = useMediaQuery("(min-width: 768px)");
-  const [doc, dispatch] = useReducer(reducer, initial);
+  const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(initial);
   const save = useAutosave(doc);
   const { svg, error, pending, ready } = useCompiledCV(doc);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -345,10 +386,44 @@ function Editor({ initial }: { initial: CVDocument }) {
           ? { label: "Saving…", settled: false }
           : { label: "Saved", settled: true };
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) {
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if (k === "z") {
+        // every field is controlled, so the browser's own undo stack is
+        // already out of step with the document — take the key rather than
+        // let the two fight
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if (k === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
   return (
     <DispatchCtx value={dispatch}>
       <div className="flex h-full flex-col">
-        <EditorTopbar doc={doc} dispatch={dispatch} tab={tab} setTab={setTab} />
+        <EditorTopbar
+          doc={doc}
+          dispatch={dispatch}
+          tab={tab}
+          setTab={setTab}
+          undo={undo}
+          redo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
         <div className="relative min-h-0 flex-1">
           {wide ? (
             <ResizablePanelGroup
