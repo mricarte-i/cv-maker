@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import type { Block, EntryVariant, Item } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
@@ -9,14 +10,62 @@ import { DragHandle, RowDelete, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
 import { AddButton, Chip, FIELD, Mark, Rail, Row, TEXT } from "./Row";
 
-type Slot = "title" | "subtitle" | "date" | "location" | null;
+type Field = "title" | "subtitle" | "date" | "location";
 
-/** plan.md §3 — the same four fields land in different slots per variant */
-const SLOTS: Record<EntryVariant, [Slot, Slot, Slot, Slot]> = {
-  //             top-left   top-right   bottom-left  bottom-right
-  job: ["title", "location", "subtitle", "date"],
-  education: ["title", "date", "subtitle", null],
-  project: ["title", "date", null, null],
+type Layout = {
+  topLeft: Field[];
+  topRight: Field | null;
+  bottomLeft: Field | null;
+  bottomRight: Field | null;
+};
+
+/** plan.md §3 — the same four fields land in different slots per variant.
+    education merges its location into the title line, comma and all. */
+const SLOTS: Record<EntryVariant, Layout> = {
+  job: {
+    topLeft: ["title"],
+    topRight: "location",
+    bottomLeft: "subtitle",
+    bottomRight: "date",
+  },
+  education: {
+    topLeft: ["title", "location"],
+    topRight: "date",
+    bottomLeft: "subtitle",
+    bottomRight: null,
+  },
+  project: {
+    topLeft: ["title"],
+    topRight: "date",
+    bottomLeft: null,
+    bottomRight: null,
+  },
+};
+
+/** a field looks the same wherever it lands, mirroring how it prints */
+const STYLE: Record<Field, string> = {
+  title: "font-serif font-bold",
+  subtitle: "font-serif italic",
+  date: "text-pencil",
+  location: "text-pencil",
+};
+
+/** placeholders - the schema's field names are deliberately generic (plan.md §2)
+ * — the placeholder is where each variant's actual meaning gets said out loud */
+const NAMES: Record<EntryVariant, Record<Field, string>> = {
+  job: {
+    title: "position",
+    subtitle: "company",
+    date: "2021 – present",
+    location: "city, country",
+  },
+  education: {
+    title: "institution",
+    subtitle: "major",
+    date: "2017 – 2024",
+    location: "city, country",
+  },
+  project: { title: "project", subtitle: "", date: "2025", location: "" },
 };
 
 const NEXT: Record<EntryVariant, EntryVariant> = {
@@ -52,6 +101,29 @@ function BodyEditor({ itemId, body }: { itemId: string; body: Block[] }) {
         ))}
       </div>
     </Rail>
+  );
+}
+
+type Entry = Extract<Item, { kind: "entry" }>;
+
+function EntryField({
+  item,
+  field,
+  onChange,
+  className,
+}: {
+  item: Entry;
+  field: Field;
+  onChange: (field: Field, value: string) => void;
+  className?: string;
+}) {
+  return (
+    <Input
+      placeholder={NAMES[item.variant][field]}
+      className={cn("h-7", TEXT, FIELD, STYLE[field], className)}
+      value={item[field]}
+      onChange={(e) => onChange(field, e.target.value)}
+    />
   );
 }
 
@@ -156,46 +228,61 @@ export function ItemEditor({
     case "entry": {
       const set = (patch: EntryPatch) =>
         dispatch({ type: "entry/update", id: item.id, patch });
-      const slots = SLOTS[item.variant];
+
+      // exhaustive rather than a computed key: `{ [field]: v }` widens to a
+      // string index signature, which EntryPatch will not take without a cast
+      const setField = (field: Field, value: string) => {
+        switch (field) {
+          case "title":
+            return set({ title: value });
+          case "subtitle":
+            return set({ subtitle: value });
+          case "date":
+            return set({ date: value });
+          case "location":
+            return set({ location: value });
+        }
+      };
+
+      const s = SLOTS[item.variant];
+      const field = (f: Field, className: string) => (
+        <EntryField
+          item={item}
+          field={f}
+          onChange={setField}
+          className={className}
+        />
+      );
 
       return (
         <Shell {...frame} mark="▪">
-          <div className="flex items-baseline gap-1">
+          {/* the same two-line, four-slot geometry the template prints */}
+          <div className="flex items-baseline gap-2">
             <Chip onClick={() => set({ variant: NEXT[item.variant] })}>
               {CHIP[item.variant]}
             </Chip>
-            <Input
-              placeholder="title"
-              className={cn("h-7 font-serif font-bold", TEXT, FIELD)}
-              value={item.title}
-              onChange={(e) => set({ title: e.target.value })}
-            />
+            <div className="flex min-w-0 flex-1 items-baseline gap-1">
+              {s.topLeft.map((f, i) => (
+                <Fragment key={f}>
+                  {i > 0 && <span className="text-pencil">,</span>}
+                  {field(f, i === 0 ? "min-w-0 flex-1" : "w-28 shrink")}
+                </Fragment>
+              ))}
+            </div>
+            {s.topRight && field(s.topRight, "w-32 shrink-0 text-right")}
           </div>
 
-          <div className="grid grid-cols-2 gap-x-3 pl-1">
-            {slots.includes("subtitle") && (
-              <Input
-                className={cn("h-7 font-serif italic", TEXT, FIELD)}
-                placeholder="subtitle"
-                value={item.subtitle}
-                onChange={(e) => set({ subtitle: e.target.value })}
-              />
-            )}
-            <Input
-              placeholder="date"
-              className={cn("h-7", TEXT, FIELD)}
-              value={item.date}
-              onChange={(e) => set({ date: e.target.value })}
-            />
-            {slots.includes("location") && (
-              <Input
-                placeholder="location"
-                className={cn("h-7", TEXT, FIELD)}
-                value={item.location}
-                onChange={(e) => set({ location: e.target.value })}
-              />
-            )}
-          </div>
+          {(s.bottomLeft || s.bottomRight) && (
+            <div className="flex items-baseline gap-2">
+              {s.bottomLeft ? (
+                field(s.bottomLeft, "min-w-0 flex-1")
+              ) : (
+                <div className="flex-1" />
+              )}
+              {s.bottomRight &&
+                field(s.bottomRight, "w-32 shrink-0 text-right")}
+            </div>
+          )}
 
           <BodyEditor itemId={item.id} body={item.body} />
         </Shell>
