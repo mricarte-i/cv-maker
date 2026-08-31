@@ -26,8 +26,8 @@ export type Action =
   | { type: "contact/add" }
   | { type: "section/add" }
   | { type: "item/add"; sectionId: string; kind: Item["kind"] }
-  | { type: "block/add"; itemId: string; kind: Block["kind"] }
-  | { type: "bullet/add"; blockId: string }
+  | { type: "block/add"; itemId: string; kind: Block["kind"]; at?: number }
+  | { type: "bullet/add"; blockId: string; at?: number }
 
   // patches: each carries a different shape
   | { type: "contact/update"; id: string; patch: Partial<Omit<Contact, "id">> }
@@ -80,19 +80,19 @@ const edit = produce(
       case "block/add": {
         const it = item(doc, a.itemId);
         if (it && "body" in it) {
-          it.body.push(
-            a.kind === "bullets" ? emptyBullets() : emptyParagraph(),
-          );
+          const b = a.kind === "bullets" ? emptyBullets() : emptyParagraph();
+          it.body.splice(a.at ?? it.body.length, 0, b);
         }
         break;
       }
       case "bullet/add": {
         const b = block(doc, a.blockId);
         if (b?.kind === "bullets") {
-          b.items.push(emptyBullet());
+          b.items.splice(a.at ?? b.items.length, 0, emptyBullet());
         }
         break;
       }
+
       case "contact/update": {
         const c = doc.contacts.find((c) => c.id === a.id);
         if (c) {
