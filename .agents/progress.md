@@ -483,7 +483,7 @@ skip items with no `body`. A second bodyless kind made that wrong, so both now
 test `"body" in it` — TypeScript narrows a discriminated union through `in`,
 and the check stops needing an edit every time a kind is added.
 
-## Milestone 6.8 — editor redesign ✅ (stage 3 outstanding)
+## Milestone 6.8 — editor redesign ✅
 
 The editor pane spent most of its width and height on chrome. A bullet's text
 sat inside five nested boxes and ~120 px of horizontal padding, and 62% of a
@@ -693,15 +693,66 @@ eat their Space and Enter.
    even though Enter chains bullets, because it is the only way to put the first
    bullet back into an emptied list.
 
-### Stage 3 — still owed
+### Stage 3 — row menus ✅
 
-- Grip-click opens a row menu (delete, turn into, duplicate); drag still
-  reorders. `activationConstraint: { distance: 5 }` already makes both possible
-  on one control.
-- That menu is where a `bullets` block gets its reorder and delete back.
-- Fold `+ bullet`, `+ paragraph / + bullets`, and
-  `+ entry / + oneline / + tags / + prose` into a single `+` per container —
-  three add-rows can currently stack under two lines of content.
+`src/ui/Menu.tsx` wraps `@base-ui/react/menu` in the app's flat look and adds
+`AddMenu`; `RowMenu` lives in `Sortable.tsx`, where it replaced `RowDelete`
+entirely.
+
+**The trigger is a `⋯` in the right gutter, not the grip.** Grip-click was the
+plan — `activationConstraint: { distance: 5 }` means a plain click on a grip is
+already a no-op, which looked like free real estate. It is not usable: a
+dnd-kit drag _ends in a `click`_ on the grip, `s.isDragging` is already false by
+then (pointerup → onDragEnd → click), and React's synthetic dispatch does not
+honour `stopImmediatePropagation` between two handlers on one element. Every
+workaround is a hand-rolled distance guard duplicating what `PointerSensor`
+computes internally. The right gutter therefore did not shrink, which was
+stage 3's other hoped-for win.
+
+**Position moved into `RowCtx`.** `RowMenu` needs the list, the index, and the
+length (to disable "move up" on the first row). Drilling three props through
+`Shell` → `ItemEditor` → `BlockEditor` was the alternative; putting them in the
+context `SortableList` already provides is both smaller and stronger — a row and
+its menu cannot disagree about where the row sits. `list` is optional there,
+because a `wrap` list (tags) is driven by `onMove` and has no `ListRef`.
+
+**This is what finally paid the transparent-block debt.** The trailing
+`+ bullet` row sits inside the _blocks_ `SortableRow` and outside the bullets
+`SortableList`, so its `RowMenu` reads the block's context — a `bullets` block
+can now be moved and deleted whether or not it has bullets, and the
+delete-only-when-empty hack is gone.
+
+Unplanned payoff: **keyboard reordering without a drag.** Move up / move down
+work from any row at any depth, which the grip's Space-lift never made pleasant.
+
+`AddMenu` folded `+ paragraph / + bullets` and
+`+ entry / + oneline / + tags / + prose` into one `+ add` each, and its items
+carry the same copy-marks the gutter uses. `+ bullet` stayed a plain
+`AddButton` — Enter chains bullets now, but it is still the only way to put the
+first one back into an emptied list.
+
+### Duplicate reminted ids, and only where it can
+
+`copyItem` / `copySection` in `factory.ts`, behind `section/duplicate` and
+`item/duplicate`. **A copy has to remint every id**: React keys and `navigate()`
+both look rows up by id, so a duplicate sharing them would silently edit the
+original.
+
+Two deliberate limits:
+
+- **No generic `list/duplicate`.** `navigate.list()` erases to `unknown[]`, which
+  is exactly what lets move and remove be one action each — a generic duplicate
+  would have to undo that erasure to remint ids. Items and sections are also the
+  only two things anyone duplicates on a CV.
+- **`current(it)` before cloning.** Spreading a draft into a new object and
+  splicing it back into the same draft is the kind of thing immer forgives until
+  it doesn't; `current()` takes a plain snapshot, which is what a clone wants
+  anyway.
+
+**"Turn into" was cut.** paragraph ⇄ bullets and entry ⇄ oneline ⇄ tags are data
+questions, not UI ones — what happens to three bullets when they become one
+paragraph, or to an entry's body when it becomes a `oneline`? Deserves its own
+pass.
 ## Milestone 7 — Persistence ✅
 
 - [x] Autosave — `src/state/persist.ts`, 500 ms debounce (lazier than the 200 ms
