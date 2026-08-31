@@ -1,9 +1,18 @@
 {
   "name": "cv-maker",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "description": "Write a CV in your browser — Typst compiles it to PDF locally, nothing leaves the tab.",
+  "license": "MIT",
+  "homepage": "https://mricarte-i.github.io/cv-maker/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mricarte-i/cv-maker.git"
+  },
+  "packageManager": "pnpm@10.26.1",
   "scripts": {
+    "generate-pwa-assets": "pwa-assets-generator",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
@@ -40,6 +49,7 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",

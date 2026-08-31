@@ -1,7 +1,6 @@
 import {
   useEffect,
   useMemo,
-  useReducer,
   useRef,
   useState,
   useSyncExternalStore,
@@ -12,7 +11,7 @@ import { parseDocument } from "./schema/parse";
 import { emptyDocument } from "./schema/factory";
 import type { CVDocument } from "./schema/cv";
 import { useAutosave, useStoredDocument } from "./state/persist";
-import { reducer, type Action } from "./state/reducer";
+import { type Action } from "./state/reducer";
 import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
 import { useCompiledCV } from "./typst/useCompiledCV";
 import { DispatchCtx } from "./ui/dispatch";
@@ -72,33 +71,6 @@ function App() {
     );
   }
   return <Editor initial={initial} />;
-}
-
-const Rule = () => <div className="mx-1 h-4 w-px bg-border" />;
-
-/** the secondary actions: same button, none of the shouting */
-function Quiet({
-  onClick,
-  className,
-  children,
-}: {
-  onClick: () => void;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      variant="ghost"
-      size="xs"
-      onClick={onClick}
-      className={cn(
-        "font-normal tracking-normal text-pencil normal-case",
-        className,
-      )}
-    >
-      {children}
-    </Button>
-  );
 }
 
 type Tab = "write" | "preview";

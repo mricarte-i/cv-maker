@@ -4,6 +4,23 @@ Running the Typst compiler in your browser via WASM to get you your CV.
 
 Template: [silver-dev-cv](https://typst.app/universe/package/silver-dev-cv).
 
+## WIP 
+
+### Notes
+- iOS home-screen PWA can't download PDFs due to Safari limitations. Use a desktop browser or the iOS Files app.
+
+      typst_ts_web_compiler_bg.wasm   28,325 kB │ gzip: 10,947 kB
+      typst_ts_renderer_bg.wasm          972 kB │ gzip:    360 kB
+      index.js                           562 kB │ gzip:    177 kB
+      precache: 12 entries (1,927 KiB)
+
+
+### To Do
+- [ ] Download artifacts (TYP, JSON, PDF) as a single ZIP file.
+- [ ] Fix iOS PWA download issue (Safari limitation).
+- [ ] Bundle size reduction: remove unused code, optimize WASM, etc.
+
+
 ## Development
 
     pnpm install

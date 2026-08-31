@@ -10,11 +10,14 @@ import compilerWasm from "@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_
 import rendererWasm from "@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url";
 import cvTyp from "./cv.typ?raw";
 
+/** "/" in dev, "/cv-maker/" on Pages — inlined at build time */
+const BASE = import.meta.env.BASE_URL;
+
 const FONTS = [
-  "/fonts/LibertinusSerif-Regular.otf",
-  "/fonts/LibertinusSerif-Bold.otf",
-  "/fonts/LibertinusSerif-BoldItalic.otf",
-  "/fonts/LibertinusSerif-Italic.otf",
+  `${BASE}fonts/LibertinusSerif-Regular.otf`,
+  `${BASE}fonts/LibertinusSerif-Bold.otf`,
+  `${BASE}fonts/LibertinusSerif-BoldItalic.otf`,
+  `${BASE}fonts/LibertinusSerif-Italic.otf`,
 ];
 
 const enc = new TextEncoder();
@@ -23,7 +26,7 @@ let renderer: ReturnType<typeof createTypstRenderer>;
 
 async function init() {
   const t0 = performance.now();
-  const template = await fetch("/typst/silver-dev-cv.typ").then((r) =>
+  const template = await fetch(`${BASE}typst/silver-dev-cv.typ`).then((r) =>
     r.text(),
   );
 
