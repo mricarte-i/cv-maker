@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-08-27
+Last updated: 2026-08-31
 
 ---
 
@@ -483,6 +483,225 @@ skip items with no `body`. A second bodyless kind made that wrong, so both now
 test `"body" in it` — TypeScript narrows a discriminated union through `in`,
 and the check stops needing an edit every time a kind is added.
 
+## Milestone 6.8 — editor redesign ✅ (stage 3 outstanding)
+
+The editor pane spent most of its width and height on chrome. A bullet's text
+sat inside five nested boxes and ~120 px of horizontal padding, and 62% of a
+one-line bullet row's height was border, margin, and padding. Worse, all four
+levels drew the _same_ box, so nesting repeated rather than encoded depth — and
+the one thing worth knowing, _what kind of thing am I typing?_, was written
+nowhere but the placeholder.
+
+Replaced with a Notion-shaped editor whose vocabulary comes from typesetting
+rather than an icon set: no boxes, indentation for depth, a copy-mark in the
+gutter for kind, and the editor's own geometry mirroring what the template
+prints.
+
+**No schema change.** `SCHEMA_VERSION` stays at 3; `cv.typ`, `parse.ts`, and
+`migrate.ts` are untouched. The only change outside the view layer is
+`at?: number` on `block/add` and `bullet/add`.
+
+### The row — `src/ui/Row.tsx`
+
+One primitive file: `Row` (24 px gutter · content · 24 px control column),
+`Rail` (one nesting level), `Mark`, `Chip`, `AddButton`, and the `FIELD` /
+`TEXT` class constants shared by every field.
+
+| depth | thing                          | mark                                                              |
+| ----- | ------------------------------ | ----------------------------------------------------------------- |
+| 0     | section                        | serif caps label over a rule — the same typography the PDF prints |
+| 1     | entry / oneline / tags / prose | `▪` `–` `#` `¶`                                                   |
+| 2     | paragraph, bullet              | `¶` `•`                                                           |
+
+**The grip _is_ the mark.** `DragHandle` takes a `marker` and swaps it for
+`GripVertical` on `group-hover/row`. One 24 px column, two jobs, nothing at rest
+but the glyph.
+
+**`bullets` and `prose` are transparent.** A `bullets` block has no content of
+its own — it _is_ its bullets — so it contributes no row and no indent, and a
+bullet sits at the same depth as a paragraph. That is what took bullet text from
+~120 px of indent to ~62 px, and row height from ~54 px to ~28 px. Cost: the
+block owns no gutter, so its delete lives on the trailing `+ bullet` row and
+only appears once the list is empty, where "remove this" has exactly one
+reading. Reordering a bullets block against a sibling paragraph is currently
+impossible — that is stage 3's debt.
+
+**The lit rail is the signature, and it is four lines of CSS.** Each `Rail` is a
+`border-left` that tints on `:hover` and lights on `:focus-within`; because the
+wrappers nest, a caret three levels deep lights its whole ancestry — a
+breadcrumb drawn in the margin, costing nothing at rest. `:focus-within` is
+declared last so it wins when both match.
+
+**Both gutters are reserved, always.** The delete began absolutely positioned
+and overlapped the text. A real 24 px column that renders empty when there is no
+control keeps rows aligned whether hovered or not. The cost is that nested rows
+staircase their right gutters exactly as they staircase their left.
+
+**Fields are borderless.** `Input` and `Textarea` were already customised to
+`border-transparent border-b-input px-0`, and `cn` is `twMerge`, so
+`FIELD = "border-b-transparent hover:border-b-input focus-visible:border-b-ring"`
+replaces the resting rule rather than fighting it. No primitive was edited.
+
+### The entry is a wireframe of its own output
+
+`SLOTS` is a direct transcription of plan.md §3's variant table, and it is now
+the _only_ record of which fields a variant has — the old `USES` constant and the
+`grid-cols-2` that let `location` wrap onto its own line are both gone.
+
+```
+job        JOB  Software Engineer II ──────────────  Argentina
+                Flowics (acquired by Vizrt) ───────  2021 – 2026
+education  EDU  Instituto Tecnológico…, Argentina ─  2017 – 2027
+                Software Engineering
+project    PRJ  Interactive 3D Scene Web App ──────  2025
+```
+
+`topLeft` is a _list_, because `education()` prints `[#institution, #location]`
+on one line — that is why education has no location slot on the right, and the
+comma between the two fields is the template's, not decoration.
+
+Two supporting records earn their keep: `STYLE` (a field looks the same wherever
+it lands — title serif bold, subtitle serif italic) and `NAMES`, which is where
+plan.md §2's "the field names are intentionally generic" finally gets _said_.
+The date placeholders are real dates (`2021 – present`) rather than the word
+"date", so the free-text format documents itself.
+
+Clicking the chip cycles the variant and visibly re-arranges the slots, which
+teaches the mapping instead of leaving it in a table in plan.md.
+
+`setField` is an exhaustive four-case switch rather than `set({ [field]: v })`,
+which widens to a string index signature that `EntryPatch` will not accept
+without a cast.
+
+### Keyboard — `src/ui/focus.ts`
+
+Enter in a bullet inserts the next bullet below and takes the caret; Enter in a
+paragraph does the same for paragraph blocks; Backspace on an empty bullet
+removes it and moves the caret up. This is the half that makes it feel like
+writing — flat boxes alone still read as a form.
+
+**The reducer mints the new row's id, so the caller cannot name the row it wants
+focused — only the position it will land in.** Hence a module-level one-shot
+token (`focusAfterRender(key)` / `useFocusClaim(key)`), keyed `parentId:index`.
+The claim effect deliberately has **no dep array**: it has to be tested on the
+very render that brought the row into existence.
+
+Deliberately out:
+
+- **No splitting.** Enter mid-text gives an empty row below rather than cutting
+  at the caret. Splitting needs the reducer to write two rows in one action, and
+  on a CV you type at the end of a line.
+- **Backspace never removes the last bullet.** An empty `bullets` block renders
+  nothing at all (M4), so backspacing through the last one would leave an
+  invisible block and no field to type into.
+- **Backspace on an empty paragraph does nothing.** Restoring the caret means
+  landing it in whatever sits above, possibly a bullet — a different key space.
+  Not worth the branch until stage 3 gives blocks a row menu.
+
+Shift+Enter still types a literal newline. Harmless: Typst folds a single
+newline into a space, which is also why Enter is free to mean "next block".
+
+### Collapse — sections only
+
+A disclosure caret on the section header, `useState` **local to
+`SectionEditor`** because it is a view concern that has no business in the
+document. Collapsed, a section reads as its rule, its label, and a row of the
+marks of what it holds — `▪ ▪ ▪` for three jobs, `#` for skills. That summary is
+information (which kinds are inside) rather than decoration, and it reuses the
+gutter's own glyph vocabulary, so `MARK` moved out of `ItemEditor`'s switch into
+one exported record.
+
+Entries deliberately do not collapse: two disclosure interactions at two depths
+for a much smaller win. "Collapse all" would need the state lifted into
+`Editor`; not pre-built.
+
+### Dark mode was inverted, not designed
+
+The old `.dark` block was the light theme flipped, and it failed for one
+specific reason: **the subject of this app is a white page, and it is on screen
+at all times.** A near-black shell put a ΔL of ~0.85 next to the preview and
+turned it into a floodlight.
+
+Rebuilt as a _lamplit desk_ — nothing in the palette is black:
+
+| name     | oklch            | role                             |
+| -------- | ---------------- | -------------------------------- |
+| slate    | `0.235 0.006 60` | the desk — editor shell          |
+| felt     | `0.285 0.007 60` | raised surfaces, the preview mat |
+| chalk    | `0.93 0.006 75`  | text you typed                   |
+| graphite | `0.63 0.012 65`  | markers, placeholders            |
+| ember    | `0.68 0.115 55`  | lit rail, focus, the pdf button  |
+
+Five findings worth keeping, all of which were invisible until dark mode existed:
+
+1. **Ink → chalk is not a symmetric transform.** The section rule was
+   `border-foreground/70`; inverting its _colour_ inverted its _role_, from a
+   line drawn in ink to a strip of light brighter than the label above it. It
+   now has its own `--rule` token, dimmer than the label in dark and darker than
+   it in light.
+2. **A mid-lightness red on near-black reads as an error**, because that is what
+   every linter gutter and failed field looks like. `--rail-lit` moved to an
+   ember.
+3. **A saturated accent gains lightness on a dark ground, it does not lose it.**
+   `--primary` was being _darkened_ 0.553 → 0.47, which is why the pdf button
+   looked muddy; it is 0.68 with dark foreground now.
+4. **`--pencil` at 0.5 on 0.147 is ~3.5:1.** The markers are the whole navigation
+   system of this design and cannot sit at the readability floor.
+5. **`oklch(1 0 0 / 10%)` borders compose differently over every surface** and
+   vanish on `--card`. In a design whose only structural device is a hairline,
+   the hairline needs a real value.
+
+`useTheme` cycles system → light → dark and toggles `.dark` on the root; the
+`system` branch is the only one that keeps a `matchMedia` listener. `index.html`
+carries an inline pre-paint script, or dark mode flashes white on load.
+
+### Tags: sortable pills, and the position bug
+
+Clicking a pill to edit it used to append the result at the end of the list.
+`TagsInput` now tracks `home` — the hole the pill left — and splices the draft
+back there; `onBlur` commits to `home` too, so clicking away no longer
+relocates a tag. The one subtle line is
+`j = draft.trim() && at <= i ? i + 1 : i`: flushing a pending draft shifts a pill
+to its right one slot before it gets pulled out.
+
+Pills reorder via `SortableList`, not a bespoke `DndContext` — the M6 lesson
+about that `onDragEnd` guard was expensive enough once. `SortableList` grew a
+`Move` union (`{ list }` **or** `{ onMove }`) so a locally-owned list can reuse
+the whole mechanism while staying a controlled component with one update path,
+and an `orientation="wrap"` that switches to `rectSortingStrategy` and unlocks
+the x axis.
+
+**`display: contents` has a zero-size rect.** The pills wrap in
+`className="contents"` so they stay direct children of the flex-wrap row —
+which means `restrictToParentElement` would clamp every pill to a point. A
+`wrap` list runs with no modifiers at all.
+
+The pill is its own drag handle: `PointerSensor`'s 5 px activation distance is
+what keeps a plain click an edit rather than a drag. Its two inner buttons
+`stopPropagation` on keydown, or the `KeyboardSensor` on the wrapping span would
+eat their Space and Enter.
+
+### Two things that looked like bugs and were geometry
+
+1. **The bullet marker rendered above its own grip.** `BulletsList` had both
+   `<DragHandle />` and `<Textarea>` as _children_ of `Row`, inside the
+   `min-w-0 flex-1` content column; `Textarea` is `flex w-full`, so it wrapped to
+   the next line. The grip belongs in the `marker` slot, not in the content.
+2. **`+ bullet` as a filled chip was the only filled surface in the pane**, so it
+   read as leftover chrome rather than as a different kind of thing. It is a
+   plain `AddButton` now, matching `+ paragraph` / `+ bullets` below it. Kept
+   even though Enter chains bullets, because it is the only way to put the first
+   bullet back into an emptied list.
+
+### Stage 3 — still owed
+
+- Grip-click opens a row menu (delete, turn into, duplicate); drag still
+  reorders. `activationConstraint: { distance: 5 }` already makes both possible
+  on one control.
+- That menu is where a `bullets` block gets its reorder and delete back.
+- Fold `+ bullet`, `+ paragraph / + bullets`, and
+  `+ entry / + oneline / + tags / + prose` into a single `+` per container —
+  three add-rows can currently stack under two lines of content.
 ## Milestone 7 — Persistence ✅
 
 - [x] Autosave — `src/state/persist.ts`, 500 ms debounce (lazier than the 200 ms
