@@ -16,6 +16,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import type { ListRef } from "@/state/navigate";
 import { useDispatch } from "./dispatch";
@@ -28,19 +29,27 @@ type Sortable = ReturnType<typeof useSortable>;
 
 const RowCtx = createContext<Sortable | null>(null);
 
+type Move =
+  | { list: ListRef; onMove?: never }
+  | { list?: never; onMove: (from: number, to: number) => void };
+
 export function SortableList<T extends { id: string }>({
   list,
+  onMove,
   items,
   className,
+  orientation = "vertical",
   children,
-}: {
-  list: ListRef;
+}: Move & {
   items: readonly T[];
   className?: string;
+  /** "wrap" is for pills — free 2D movement inside a flex-wrap row */
+  orientation?: "vertical" | "wrap";
   children: (item: T, index: number) => React.ReactNode;
 }) {
   const dispatch = useDispatch();
   const ids = items.map((i) => i.id);
+  const wrap = orientation === "wrap";
 
   const sensors = useSensors(
     //a plain click on the grip must not start a drag
@@ -55,12 +64,17 @@ export function SortableList<T extends { id: string }>({
   );
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    if (over && active.id === over.id) {
+    if (!over || active.id === over.id) {
       return;
     }
     const from = ids.indexOf(active.id as string);
-    const to = ids.indexOf(over?.id as string);
-    if (from !== -1 && to !== -1) {
+    const to = ids.indexOf(over.id as string);
+    if (from === -1 || to === -1) {
+      return;
+    }
+    if (onMove) {
+      onMove(from, to);
+    } else if (list) {
       // list/move's splice pair is already arrayMove semantics
       dispatch({ type: "list/move", list, from, to });
     }
@@ -71,12 +85,16 @@ export function SortableList<T extends { id: string }>({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
-      modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+      // a wrap list has no parent box to clamp against — see TagsInput
+      modifiers={wrap ? [] : [restrictToVerticalAxis, restrictToParentElement]}
     >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={ids}
+        strategy={wrap ? rectSortingStrategy : verticalListSortingStrategy}
+      >
         <div className={className}>
           {items.map((x, i) => (
-            <SortableRow key={x.id} id={x.id}>
+            <SortableRow key={x.id} id={x.id} wrap={wrap}>
               {children(x, i)}
             </SortableRow>
           ))}
@@ -88,9 +106,11 @@ export function SortableList<T extends { id: string }>({
 
 function SortableRow({
   id,
+  wrap,
   children,
 }: {
   id: string;
+  wrap?: boolean;
   children: React.ReactNode;
 }) {
   const s = useSortable({ id });
@@ -100,13 +120,16 @@ function SortableRow({
       <div
         ref={s.setNodeRef}
         style={{
-          // x is always 0 under restrictToVerticalAxis, so no CSS.Transform needed
+          // x stays 0 under restrictToVerticalAxis; a wrap list needs both
           transform: s.transform
-            ? `translate3D(0, ${s.transform.y}px, 0)`
+            ? `translate3d(${wrap ? s.transform.x : 0}px, ${s.transform.y}px, 0)`
             : undefined,
           transition: s.transition,
         }}
-        className={cn(s.isDragging && "relative z-10 opacity-80")}
+        className={cn(
+          wrap && "inline-flex",
+          s.isDragging && "relative z-10 opacity-80",
+        )}
       >
         {children}
       </div>
@@ -114,11 +137,17 @@ function SortableRow({
   );
 }
 
-export function DragHandle({ marker }: { marker?: React.ReactNode }) {
+/** the row's sortable — for a row that is its own drag handle, e.g. a tag pill */
+export function useRow() {
   const s = useContext(RowCtx);
   if (!s) {
-    throw new Error("DragHandle must be used inside a SortableList");
+    throw new Error("useRow must be used inside a SortableList");
   }
+  return s;
+}
+
+export function DragHandle({ marker }: { marker?: React.ReactNode }) {
+  const s = useRow();
 
   return (
     <button
