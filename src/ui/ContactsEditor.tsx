@@ -5,8 +5,72 @@ import { useDispatch } from "./dispatch";
 import { Input } from "@/components/ui/input";
 import { DragHandle, RowDelete, SortableList } from "./Sortable";
 import { AddButton, FIELD, Mark, Row, TEXT } from "./Row";
+import { focusAfterRender, rowKey, useFocusClaim } from "./focus";
 
 const CONTACTS: ListRef = { kind: "contacts" };
+
+// contacts have no parent id — a literal namespace can't collide with a uuid
+const KEY = "contacts";
+
+function ContactRow({
+  contact,
+  index,
+  count,
+}: {
+  contact: Contact;
+  index: number;
+  count: number;
+}) {
+  const dispatch = useDispatch();
+  const ref = useFocusClaim<HTMLInputElement>(rowKey(KEY, index));
+
+  const set = (patch: Partial<Omit<Contact, "id">>) =>
+    dispatch({ type: "contact/update", id: contact.id, patch });
+
+  //TODO: very similar to onKeyDown in BlockEditor...
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      dispatch({ type: "contact/add", at: index + 1 });
+      focusAfterRender(rowKey(KEY, index + 1));
+      return;
+    }
+    // backspace on empty contact content + empty label > delete contact
+    if (e.key === "Backspace" && contact.text === "" && contact.link === "") {
+      e.preventDefault();
+      dispatch({ type: "list/remove", list: CONTACTS, index });
+      // nothing to hand the caret to if that was the last one
+      if (count > 1) {
+        focusAfterRender(rowKey(KEY, Math.max(0, index - 1)));
+      }
+    }
+  };
+
+  return (
+    <Row
+      marker={<DragHandle marker={<Mark>@</Mark>} />}
+      end={<RowDelete list={CONTACTS} index={index} />}
+    >
+      <div className="flex min-w-0 items-baseline gap-2">
+        <Input
+          ref={ref}
+          className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
+          placeholder="label"
+          value={contact.text}
+          onKeyDown={onKeyDown}
+          onChange={(e) => set({ text: e.target.value })}
+        />
+        <Input
+          className={cn("h-7 min-w-0 flex-1", TEXT, FIELD)}
+          placeholder="link — optional"
+          value={contact.link}
+          onKeyDown={onKeyDown}
+          onChange={(e) => set({ link: e.target.value })}
+        />
+      </div>
+    </Row>
+  );
+}
 
 export function ContactsEditor({ contacts }: { contacts: Contact[] }) {
   const dispatch = useDispatch();
@@ -14,39 +78,7 @@ export function ContactsEditor({ contacts }: { contacts: Contact[] }) {
   return (
     <div>
       <SortableList list={CONTACTS} items={contacts}>
-        {(c, i) => (
-          <Row
-            marker={<DragHandle marker={<Mark>@</Mark>} />}
-            end={<RowDelete list={CONTACTS} index={i} />}
-          >
-            <div className="flex min-w-0 items-baseline gap-2">
-              <Input
-                className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
-                placeholder="label"
-                value={c.text}
-                onChange={(e) =>
-                  dispatch({
-                    type: "contact/update",
-                    id: c.id,
-                    patch: { text: e.target.value },
-                  })
-                }
-              />
-              <Input
-                className={cn("h-7 min-w-0 flex-1", TEXT, FIELD)}
-                placeholder="link — optional"
-                value={c.link}
-                onChange={(e) =>
-                  dispatch({
-                    type: "contact/update",
-                    id: c.id,
-                    patch: { link: e.target.value },
-                  })
-                }
-              />
-            </div>
-          </Row>
-        )}
+        {(c, i) => <ContactRow contact={c} index={i} count={contacts.length} />}
       </SortableList>
 
       <div className="pl-6">

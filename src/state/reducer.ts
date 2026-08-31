@@ -23,7 +23,7 @@ export type Action =
   | { type: "list/move"; list: ListRef; from: number; to: number }
 
   // adds: each needs a different factory
-  | { type: "contact/add" }
+  | { type: "contact/add"; at?: number }
   | { type: "section/add" }
   | { type: "item/add"; sectionId: string; kind: Item["kind"] }
   | { type: "block/add"; itemId: string; kind: Block["kind"]; at?: number }
@@ -69,7 +69,7 @@ const edit = produce(
       // adds resolve their list directly — pushing through `unknown[]` would let
       // an emptyContact() land in doc.sections without a complaint
       case "contact/add":
-        doc.contacts.push(emptyContact());
+        doc.contacts.splice(a.at ?? doc.contacts.length, 0, emptyContact());
         break;
       case "section/add":
         doc.sections.push(emptySection());

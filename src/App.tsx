@@ -12,7 +12,6 @@ import { DispatchCtx } from "./ui/dispatch";
 import { SectionEditor } from "./ui/SectionEditor";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
-import { Label } from "./components/ui/label";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -26,8 +25,7 @@ import { StatusToast } from "./ui/StatusToast";
 import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { cn } from "./lib/utils";
 import { useTheme } from "./ui/theme";
-
-const FIELDS = ["name", "address", "date"] as const;
+import { Rail } from "./ui/Row";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -216,33 +214,62 @@ function Editor({ initial }: { initial: CVDocument }) {
           <ResizablePanel id="editor" defaultSize="50" minSize="25">
             <div className="relative h-full">
               <aside className="h-full space-y-4 overflow-y-auto py-4 pr-4 pl-8">
-                <div className="grid gap-2">
-                  {FIELDS.map((field) => (
-                    <div key={field} className="grid gap-1 border p-2">
-                      <Label htmlFor={field} className="capitalize">
-                        {field}
-                      </Label>
-                      <Input
-                        id={field}
-                        value={doc[field]}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "doc/set",
-                            field,
-                            value: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
+                <div>
+                  <Input
+                    placeholder="your name"
+                    className="h-8 border-b-transparent font-serif text-xl font-bold md:text-xl"
+                    value={doc.name}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "doc/set",
+                        field: "name",
+                        value: e.target.value,
+                      })
+                    }
+                  />
+                  <div className="flex items-baseline gap-2">
+                    <Input
+                      placeholder="city, country"
+                      className="h-7 border-b-transparent text-sm"
+                      value={doc.address}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "doc/set",
+                          field: "address",
+                          value: e.target.value,
+                        })
+                      }
+                    />
+                    <span className="text-pencil shrink-0 text-xs">
+                      last updated
+                    </span>
+                    <Input
+                      placeholder="2026-01-31"
+                      className="text-pencil h-7 w-28 shrink-0 border-b-transparent text-right text-sm"
+                      value={doc.date}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "doc/set",
+                          field: "date",
+                          value: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2 border p-2">
-                  <Label>Contacts</Label>
-                  <ContactsEditor contacts={doc.contacts} />
+                <div>
+                  {/* pl-5 lines the label up with the section labels, which sit
+                      behind a size-5 caret */}
+                  <div className="border-rule border-b pb-0.5 pl-5">
+                    <span className="font-serif text-[15px] font-bold tracking-[0.06em] uppercase">
+                      Contacts
+                    </span>
+                  </div>
+                  <Rail className="mt-1">
+                    <ContactsEditor contacts={doc.contacts} />
+                  </Rail>
                 </div>
-
-                <hr />
 
                 <SortableList list={{ kind: "sections" }} items={doc.sections}>
                   {(s, i) => <SectionEditor section={s} index={i} />}

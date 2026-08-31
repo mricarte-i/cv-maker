@@ -11,8 +11,10 @@ export const focusAfterRender = (key: string) => {
 };
 
 /** hands the caret to whichever row asked for it, exactly once */
-export function useFocusClaim(key: string) {
-  const ref = useRef<HTMLTextAreaElement>(null);
+export function useFocusClaim<
+  T extends HTMLInputElement | HTMLTextAreaElement = HTMLTextAreaElement,
+>(key: string) {
+  const ref = useRef<T>(null);
 
   // deliberately no dep array: the claim has to be tested on the very render
   // that brought this row into existence

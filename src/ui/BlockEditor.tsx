@@ -13,10 +13,12 @@ function BulletRow({
   block,
   bullet,
   index,
+  removeBulletsBlock,
 }: {
   block: Bullets;
   bullet: Bullet;
   index: number;
+  removeBulletsBlock: () => void;
 }) {
   const dispatch = useDispatch();
   const list: ListRef = { kind: "bullets", blockId: block.id };
@@ -30,11 +32,16 @@ function BulletRow({
       focusAfterRender(rowKey(block.id, index + 1));
       return;
     }
-    // backspace on empty bullet > delete bullet, unless its the only one
-    if (e.key === "Backspace" && bullet.text === "" && block.items.length > 1) {
+    // backspace on empty bullet > delete bullet
+    if (e.key === "Backspace" && bullet.text === "") {
       e.preventDefault();
-      dispatch({ type: "list/remove", list, index });
-      focusAfterRender(rowKey(block.id, Math.max(0, index - 1)));
+      //if it was the last bullet, remove bullets block entirely
+      if (block.items.length === 1) {
+        removeBulletsBlock();
+      } else {
+        dispatch({ type: "list/remove", list, index });
+        focusAfterRender(rowKey(block.id, Math.max(0, index - 1)));
+      }
     }
   };
 
@@ -136,7 +143,16 @@ export function BlockEditor({
         list={{ kind: "bullets", blockId: block.id }}
         items={block.items}
       >
-        {(bullet, i) => <BulletRow block={block} bullet={bullet} index={i} />}
+        {(bullet, i) => (
+          <BulletRow
+            block={block}
+            bullet={bullet}
+            index={i}
+            removeBulletsBlock={() =>
+              dispatch({ type: "list/remove", list: parent, index })
+            }
+          />
+        )}
       </SortableList>
 
       <Row
