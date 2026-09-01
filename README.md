@@ -1,4 +1,4 @@
-# cv-maker
+# [CV-Maker](https://mricarte-i.github.io/cv-maker/)
 
 Running the Typst compiler in your browser via WASM to get you your CV.
 
