@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-08-31
+Last updated: 2026-09-01
 
 ---
 
@@ -18,9 +18,9 @@ Last updated: 2026-08-31
 - [x] Replace Vite-boilerplate README
 - [x] Delete starter leftovers (`src/assets/*`, `public/icons.svg`)
 - [x] `git init`
-- [ ] **Root `LICENSE` — still undecided.** No license = all rights reserved.
-      MIT is the low-friction default if this goes public; neither vendored
-      license constrains the choice.
+- [x] **Root `LICENSE` — MIT**, settled at release. No license at all would
+      have meant all rights reserved on a public repo; neither vendored license
+      constrained the choice.
 - [x] `.gitignore` — `.agents/*.md` now tracked, `*:Zone.Identifier` ignored
 - [x] Root `tsconfig.json` reduced to a pure solution file. Its `baseUrl` tripped
       TS5101, so a bare `tsc --noEmit` exited before checking anything;
@@ -63,14 +63,20 @@ Measure in fresh incognito with DevTools "Disable cache" checked.
 |---|---|---|
 | compiler WASM | 28,325 KB | 10,947 KB |
 | renderer WASM | 972 KB | 360 KB |
-| app JS | 193 KB | 61 KB |
-| worker JS | 111 KB | - |
+| app JS | 562 KB | 177 KB |
+| app CSS | 58 KB | 11 KB |
+| worker JS | 113 KB | - |
 | fonts (4 faces) | 1,198 KB | - |
-| **precache manifest** | **12 entries / 1511 KiB** | - |
+| icons (6 files) | 28 KB | - |
+| **precache manifest** | **22 entries / 1923 KiB** | - |
 
-1511 KiB is *correct*, not the old precache bug: the shell and fonts are
-precached, the WASM is deliberately excluded and handled by a `CacheFirst`
-runtime rule instead.
+Re-measured at release. The precache figure is *correct*, not the old precache
+bug: shell, fonts, template and icons are precached, and the WASM is
+deliberately excluded and handled by a `CacheFirst` runtime rule instead.
+
+App JS tripled from the spike's 193 KB and now trips Vite's 500 kB chunk
+warning. Next to an 11 MB compiler it is noise, so it stays unsplit until the
+WASM question is answered.
 
 ### Decided during the spike
 
@@ -753,6 +759,98 @@ Two deliberate limits:
 questions, not UI ones — what happens to three bullets when they become one
 paragraph, or to an entry's body when it becomes a `oneline`? Deserves its own
 pass.
+## Milestone 6.9 — mobile 🚧
+
+The redesign was measured in a desktop pane. On a 390 px phone the same class
+stack spends **158 px on chrome and leaves 232 px for text**: 32 (`aside`
+`pl-8`) + 7 (section rail) + 24 (item gutter) + 7 (body rail) + 24 (block
+gutter) on the left, 24 (control column) + 40 (`pr-4` and the scrollbar) on the
+right. Two panes side by side is not a layout question on that screen, it is a
+subtraction problem.
+
+- [x] `useMediaQuery` — a `useSyncExternalStore` over `matchMedia` — and a
+      `write | preview` `TabSwitch` that is `md:hidden`. Above `md` the
+      `ResizablePanelGroup` is untouched; below it, one pane at a time.
+- [x] `StatusToast` and `CompileErrorDialog` moved out of `EditorPane` into the
+      wrapper around both panes. A compile error has to be readable from the
+      Preview tab — that is the tab you are on when you notice something is
+      wrong.
+- [x] One class for the whole touch story (below).
+- [ ] Width trims: `pl-8`→`pl-3`, `pr-4`→`pr-2`, gutters `w-6`→`w-5`, rails
+      `pl-1.5`→`pl-1` (~48 px), then dropping the body rail below `sm` (~31 px).
+- [ ] Lift collapse state out of `SectionEditor` so "collapse all" can exist. A
+      fully folded document is the outline view a phone actually wants, and
+      `Summary` already renders it.
+- [ ] Pause `useCompiledCV` while the Preview tab is hidden. Likely closes Q5
+      without touching the debounce.
+
+### Hover-only affordances were already solved, by accident
+
+Every `group-hover/row:opacity-100` in the redesign was written paired with
+`group-focus-within/row:opacity-100`, for keyboard users. Focus is not a mouse
+concept, so touch inherited the entire design for free — tap a field and the
+row's controls appear.
+
+The only gap was rows you cannot focus without a side effect: a `bullets`
+block's trailing `+ bullet` row, a section header. Hence a single
+`pointer-coarse:opacity-100` on `Row`'s control column. It keys off the
+_primary_ pointer, so a laptop with a touchscreen is unaffected.
+
+**Deliberately not on `DragHandle`.** Its grip _replaces_ the copy-mark on
+hover; making that permanent under `pointer-coarse` would delete the mark
+vocabulary — the one thing the redesign exists to show — on every phone.
+
+## Milestone 6.10 — undo/redo ✅
+
+`src/state/history.ts` wraps `reducer` rather than changing it. `useHistory`
+returns `{ doc, dispatch, undo, redo, canUndo, canRedo }`, and its `dispatch` is
+still a `Dispatch<Action>`, so `DispatchCtx` and every editor under it are
+untouched.
+
+**Snapshots, not immer patches.** Consecutive `CVDocument`s share every subtree
+that did not change, so a 100-entry stack is 100 shallow spines — the same
+structural sharing the compile trigger and the autosave already lean on. Patches
+would have cost `enablePatches()` and a reducer restructure to buy nothing.
+
+### The whole problem is coalescing
+
+Every keystroke dispatches, and undoing one character at a time is useless.
+`coalesceKey(a)` decides what "the same edit" means: `null` for anything
+structural, which always starts a fresh entry; otherwise a key of action plus
+target plus fields. Two consequences worth writing down:
+
+- **The fields are part of the key.** Retitling a job and then changing its date
+  are two undos, not one, because `Object.keys(patch)` differs.
+- **Two patch actions are structural in disguise.** `entry/update` carrying
+  `variant` rearranges the row into a different slot layout, and `tags/update`
+  carrying `items` adds, removes, or reorders pills. Both return `null`.
+
+### Three things that keep it honest
+
+- **The clock lives in a `useRef`, outside the reducer.** StrictMode invokes
+  reducers twice; a `Date.now()` inside one is a real impurity. `merge` is
+  computed at dispatch time and passed in.
+- **`if (doc === s.doc) return s;`** — immer returns the base object when a
+  recipe writes an identical value, so retyping the same character over itself
+  never reaches the history.
+- **Undo and redo clear the coalesce key**, or the next keystroke could merge
+  into an entry from before the jump.
+
+The break is idle-based, not a fixed budget: the timestamp updates on every
+merged action, so continuous typing is one entry and a 600 ms pause starts the
+next. One uninterrupted paragraph is therefore one undo. If that ever bites, a
+character budget alongside the timer is the fix.
+
+**Ctrl/Cmd+Z is taken outright**, `preventDefault()` and all, on a `window`
+listener. Every field is controlled, so the browser's own undo stack is already
+out of step with the document — letting both fire is worse than owning it.
+Ctrl+Y and Ctrl/Cmd+Shift+Z redo. The topbar carries icon buttons gated on
+`canUndo`/`canRedo`, because a phone has the history but no keyboard.
+
+**`doc/replace` is undoable.** Reset, import and "load the sample" all land in
+`past`, so Ctrl+Z brings the old CV back. The `confirm()` guards stay, but they
+stopped being the only safety net.
+
 ## Milestone 7 — Persistence ✅
 
 - [x] Autosave — `src/state/persist.ts`, 500 ms debounce (lazier than the 200 ms
@@ -835,15 +933,84 @@ place that truth gets written down.
 
 ## Milestone 9 — PWA hardening
 
-- [ ] Manifest icons (192 / 512 / maskable)
+- [x] Manifest icons — 64 / 192 / 512 / maskable, plus an apple-touch icon and
+      a `.ico`, generated by `@vite-pwa/assets-generator` from one SVG
 - [ ] SW update prompt
 - [ ] Offline verification on a real phone
 - [ ] Revisit WASM download size
+
+### The icon is the app's own copy-mark
+
+`public/favicon.svg` is a Libertinus Serif `¶`, outlined — pulled out of the
+vendored OTF with the `typst` CLI (`--format svg`), so it rasterises anywhere
+with no font dependency. `#ca3500` on `#eeedea` is `--primary` on `--paper`, the
+same two tokens the editor uses. It replaced the starter's purple bolt, which
+said nothing about a CV and matched no colour in the app.
+
+Two things that were not obvious:
+
+- **Typst centres the advance box, not the ink.** `align(center + horizon)` left
+  the mark visibly low and right of centre. The transform baked into the SVG
+  comes from solving the cubic extrema of the glyph path for a true ink box
+  (27.002 × 42.182), sizing that to 40/64 of the canvas, and centring it.
+- **The ground has to bleed to all four edges.** Android crops _into_ a
+  maskable and iOS composites transparency onto black, but `minimal-2023`
+  defaults a background only for splash screens — maskable and apple fall
+  through with nothing. `pwa-assets.config.ts` sets `resizeOptions.background`
+  on both, matching the art's own ground so the added padding is invisible.
+  Pre-baking an opaque square instead is worse: the preset then shrinks _that_
+  to 80% and you get a floating tile.
+
+The whole set is 28 kB. The starter bolt was 9.5 kB on its own.
 
 ## Milestone 10 — Export
 
 - [ ] Zip: `cv.typ` + `content.json` + template + LICENSE + README
 - [x] Bare `content.json` round-trip
+
+## Milestone 11 — first release ✅
+
+Live at <https://mricarte-i.github.io/cv-maker/>, deployed by
+`.github/workflows/deploy.yml`: build, `upload-pages-artifact`, `deploy-pages`,
+with Pages' Source set to GitHub Actions rather than a branch. Root `LICENSE` is
+MIT — see Milestone 1.
+
+### A project Pages site is a subdirectory, and only some of that is free
+
+`base: "/cv-maker/"` fixes more than expected. Vite rewrote the favicon and
+manifest links in `index.html`, the emitted script and style tags,
+`registerSW.js`, **and** the `url("/fonts/…")` in `index.css`'s four
+`@font-face` blocks — none of which needed a source change.
+
+What it cannot rewrite is a string evaluated at runtime. `worker.ts` carried
+`fetch("/typst/silver-dev-cv.typ")` and its four font paths verbatim into the
+bundle; on Pages those 404 into the SPA shell and the compiler never
+initialises, with nothing in the console that names the cause. They are
+`${import.meta.env.BASE_URL}…` now.
+
+**The VFS paths are not URLs.** `/silver-dev-cv.typ`, `/cv.typ` and
+`/content.json` live at the root of Typst's virtual filesystem and stay there
+no matter where the site is served from.
+
+**`start_url` does not inherit `base`.** vite-plugin-pwa derives `scope` from
+it but leaves an explicitly-set `start_url` alone, so `"/"` survived next to
+`"scope": "/cv-maker/"`. A start URL outside its own scope is an installability
+failure and nothing warns about it.
+
+### Two smaller traps
+
+`pnpm build` is `tsc -b && vite build`, and `tsc -b` is incremental _per
+project_. The node project — `vite.config.ts`, and now `pwa-assets.config.ts` —
+had not been rechecked in a while, so editing the config surfaced errors that
+predated the edit and looked like it caused them.
+
+`crypto.randomUUID` needs a secure context. Pages over HTTPS and `localhost` are
+both fine; testing from a phone against `http://192.168.x.x:5173` is not, and
+every id mint throws. That is the trap waiting for M9's real-phone test.
+
+No `404.html` and no `.nojekyll`: there is no router, so there are no deep links
+to fall back from, and `upload-pages-artifact` deploys the tarball without ever
+running Jekyll.
 
 ---
 
@@ -855,4 +1022,4 @@ place that truth gets written down.
 | 2 | Multi-language | — | leaning separate documents; `sys.inputs` available either way |
 | 3 | Multiple CVs vs one | M7 | ✅ **resolved** — one. A switcher needs doc-level `id`/`label` (a v3 migration), a `doc/replace` action, a flush-on-switch fix for the autosave debounce, and delete/rename/duplicate. M10's `content.json` round-trip covers the real use case (tailor a copy per application) for free. `CVDocument` is self-contained and versioned, so adding a library wrapper later stays cheap. |
 | 4 | Section labels free text or preset | M6 | ✅ **resolved** — free text |
-| 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip); phone untested |
+| 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip); a phone can finally be pointed at the live URL, and M6.9 still owes the pause-while-the-preview-is-hidden fix |
