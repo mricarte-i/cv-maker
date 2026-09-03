@@ -42,7 +42,7 @@ export function AboutDialog({
           <DialogTitle>CV Maker</DialogTitle>
           <DialogDescription>
             Write a CV in your browser. typst.ts compiles it to PDF on your
-            machine — nothing leaves the tab.
+            machine + you can install it as a PWA!
           </DialogDescription>
         </DialogHeader>
 
@@ -65,8 +65,8 @@ export function AboutDialog({
         </dl>
 
         <p className="text-pencil text-xs">
-          CVs you generate are yours — OFL clause 5 exempts documents made with
-          the font, and the template's MIT terms don't reach the output.
+          CVs you generate are yours. The OFL clause 5 exempts documents made
+          with the font, and the template's MIT terms don't reach the output.
         </p>
 
         <div className="flex items-baseline justify-between text-xs">
@@ -76,7 +76,7 @@ export function AboutDialog({
             target="_blank"
             rel="noreferrer"
           >
-            source
+            Source
           </a>
           <span className="text-pencil tabular-nums">{__BUILD__}</span>
         </div>

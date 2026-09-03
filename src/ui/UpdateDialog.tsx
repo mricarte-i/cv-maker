@@ -27,10 +27,10 @@ export function UpdateDialog() {
         </DialogHeader>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="xs" onClick={() => setLater(true)}>
-            later
+            Later
           </Button>
           <Button size="xs" onClick={applyUpdate}>
-            reload
+            Reload
           </Button>
         </div>
       </DialogContent>
