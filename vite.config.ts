@@ -41,9 +41,26 @@ export default defineConfig({
             purpose: "maskable",
           },
         ],
+        screenshots: [
+          {
+            src: "screenshot-wide.png",
+            sizes: "1280x720",
+            type: "image/png",
+            form_factor: "wide",
+            label: "Editor and live preview side by side",
+          },
+          {
+            src: "screenshot-narrow.png",
+            sizes: "720x1280",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "The Write tab on a phone",
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,typ,otf,svg,png,ico}"],
+        globIgnores: ["**/screenshot-*.png"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
         runtimeCaching: [
           {
