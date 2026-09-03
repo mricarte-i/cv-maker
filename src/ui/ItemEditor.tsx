@@ -8,17 +8,7 @@ import { BlockEditor } from "./BlockEditor";
 import { Input } from "@/components/ui/input";
 import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
-import {
-  Chip,
-  FIELD,
-  LABEL,
-  META,
-  Mark,
-  Rail,
-  Row,
-  TEXT,
-  SLOTS as cSLOTS,
-} from "./Row";
+import { Chip, FIELD, LABEL, META, Mark, Rail, Row, TEXT, SLOTS } from "./Row";
 import { AddMenu } from "./Menu";
 
 type Field = "title" | "subtitle" | "date" | "location";
@@ -32,7 +22,7 @@ type Layout = {
 
 /** plan.md §3 — the same four fields land in different slots per variant.
     education merges its location into the title line, comma and all. */
-const SLOTS: Record<EntryVariant, Layout> = {
+const LAYOUT: Record<EntryVariant, Layout> = {
   job: {
     topLeft: ["title"],
     topRight: "location",
@@ -202,7 +192,7 @@ export function ItemEditor({
     case "tags":
       return (
         <Shell {...frame} kind={item.kind}>
-          <div className={cn(cSLOTS, "@xs:items-start")}>
+          <div className={cn(SLOTS, "@xs:items-start")}>
             <Input
               className={cn("h-7 font-medium", LABEL, TEXT, FIELD)}
               placeholder="title"
@@ -228,7 +218,7 @@ export function ItemEditor({
     case "oneline":
       return (
         <Shell {...frame} kind={item.kind}>
-          <div className={cSLOTS}>
+          <div className={SLOTS}>
             <Input
               className={cn("h-7 font-medium", LABEL, TEXT, FIELD)}
               placeholder="title"
@@ -275,7 +265,7 @@ export function ItemEditor({
         }
       };
 
-      const s = SLOTS[item.variant];
+      const s = LAYOUT[item.variant];
       const field = (f: Field, className: string) => (
         <EntryField
           item={item}
@@ -293,26 +283,34 @@ export function ItemEditor({
             <Chip onClick={() => set({ variant: NEXT[item.variant] })}>
               {CHIP[item.variant]}
             </Chip>
-            <div className={cn(cSLOTS, "flex-1")}>
-              <div className={cn(cSLOTS, "flex-1 @xs:gap-1")}>
+            <div className={cn(SLOTS, "flex-1")}>
+              {/* one more slot than the other lines carry: the pair stays
+                  stacked to @sm, so the date can sit beside it sooner */}
+              <div
+                className={cn(
+                  SLOTS,
+                  "flex-1 @xs:flex-col @xs:gap-0 @sm:flex-row @sm:gap-1",
+                )}
+              >
                 {s.topLeft.map((f, i) => (
                   <Fragment key={f}>
                     {i > 0 && (
-                      <span className="text-pencil hidden @xs:inline">,</span>
+                      <span className="text-pencil hidden @sm:inline">,</span>
                     )}
                     {field(
                       f,
-                      i === 0 ? "min-w-0 flex-1" : "w-full @xs:w-28 @xs:shrink",
+                      i === 0 ? "min-w-0 flex-1" : "w-full @sm:w-28 @sm:shrink",
                     )}
                   </Fragment>
                 ))}
               </div>
+
               {s.topRight && field(s.topRight, META)}
             </div>
           </div>
 
           {(s.bottomLeft || s.bottomRight) && (
-            <div className={cSLOTS}>
+            <div className={SLOTS}>
               {s.bottomLeft ? (
                 field(s.bottomLeft, "min-w-0 flex-1")
               ) : (

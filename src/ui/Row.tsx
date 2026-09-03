@@ -9,7 +9,9 @@ export const TEXT = "min-h-0 py-0.5 text-sm leading-6";
 
 /** the print geometry needs a printed line's width. below 20rem of row the
     slots stack, one field per line. @container, not a breakpoint — a desktop
-    split dragged narrow is the same problem as a phone */
+    split dragged narrow is the same problem as a phone
+    stacked lines butt up like set copy — no gap by design. 
+    needs an @container ancestor. */
 export const SLOTS =
   "flex min-w-0 flex-col @xs:flex-row @xs:items-baseline @xs:gap-2";
 
