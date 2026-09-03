@@ -13,7 +13,7 @@ type CompileState = {
   ready: boolean; // compiler initialised
 };
 
-export function useCompiledCV(doc: CVDocument): CompileState {
+export function useCompiledCV(doc: CVDocument, active: boolean): CompileState {
   const [state, setState] = useState<CompileState>({
     svg: "",
     diagnostics: [],
@@ -31,6 +31,12 @@ export function useCompiledCV(doc: CVDocument): CompileState {
   const json = useMemo(() => JSON.stringify(doc), [doc]);
 
   useEffect(() => {
+    if (!active) {
+      // nothing queued while the preview is hidden
+      setState((s) => ({ ...s, pending: false }));
+      return;
+    }
+
     setState((s) => ({ ...s, pending: true }));
 
     const timer = setTimeout(async () => {
@@ -51,7 +57,7 @@ export function useCompiledCV(doc: CVDocument): CompileState {
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [json]);
+  }, [json, active]);
 
   return state;
 }

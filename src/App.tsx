@@ -370,7 +370,13 @@ function Editor({ initial }: { initial: CVDocument }) {
   const wide = useMediaQuery("(min-width: 768px)");
   const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(initial);
   const save = useAutosave(doc);
-  const { svg, error, pending, ready, ms } = useCompiledCV(doc);
+  // above md both panes are visible, so the preview is always active
+  // below it, compiling when it isn't on screen doesn't make sense
+  // and wastes the phone's battery
+  const { svg, error, pending, ready, ms } = useCompiledCV(
+    doc,
+    wide || tab === "preview",
+  );
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "cv-maker-panels",
     storage: window.localStorage,
