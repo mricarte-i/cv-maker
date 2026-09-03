@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-09-01
+Last updated: 2026-09-03
 
 ---
 
@@ -776,6 +776,11 @@ subtraction problem.
       Preview tab — that is the tab you are on when you notice something is
       wrong.
 - [x] One class for the whole touch story (below).
+- [x] The four-slot print geometry stacks on a narrow row — `SLOTS`, `LABEL`
+      and `META` in `Row.tsx`, container queries rather than breakpoints
+      (below).
+- [x] The topbar fits 390 px: `download pdf` is an icon-only 28 px button below
+      `md`, and `TabSwitch` names only the tab you are on.
 - [ ] Width trims: `pl-8`→`pl-3`, `pr-4`→`pr-2`, gutters `w-6`→`w-5`, rails
       `pl-1.5`→`pl-1` (~48 px), then dropping the body rail below `sm` (~31 px).
 - [ ] Lift collapse state out of `SectionEditor` so "collapse all" can exist. A
@@ -799,6 +804,36 @@ _primary_ pointer, so a laptop with a touchscreen is unaffected.
 **Deliberately not on `DragHandle`.** Its grip _replaces_ the copy-mark on
 hover; making that permanent under `pointer-coarse` would delete the mark
 vocabulary — the one thing the redesign exists to show — on every phone.
+
+### The stack point is the row's width, not the screen's
+
+The two-line, four-slot geometry `ItemEditor` draws — title and subtitle left,
+date and location right — is the geometry the template prints, and it needs a
+printed line's width to read as one. Narrower than that it has to become one
+field per line.
+
+`md:` would have been the wrong test. A desktop pane dragged narrow hits the
+same wall, and a row three rails deep is already ~60 px narrower than a sibling
+at depth 0 on the same screen. The measurement that matters is the row's own
+content box, so `Row` declares `@container` and the three shared constants —
+`SLOTS`, `LABEL`, `META` — query it at `@xs` (20 rem). Anything using them
+outside a `Row` brings its own `@container`; the name-and-date block in
+`EditorPane` is the only one.
+
+**Stacked lines carry no gap.** `SLOTS` is `flex-col` with the gap on
+`@xs:gap-2`, so once the fields stack they butt up like set copy — which is
+what a label over its value should look like. The comma between an education's
+title and subtitle is `hidden @sm:inline` for the same reason: it is
+punctuation for a run-on line, and stacked there is no run-on line.
+
+**The entry top line stacks later.** It carries one more slot than any other
+line, so its title/subtitle pair holds `flex-col` to `@sm` and lets the date
+move up beside them first. The only per-slot override in the file.
+
+The rename fell out of this: `ItemEditor`'s per-variant slot map was also called
+`SLOTS`, and the import needed an `as cSLOTS` alias to coexist. The map is
+`LAYOUT` now — it describes where fields land, not the class that stacks them.
+
 
 ## Milestone 6.10 — undo/redo ✅
 
@@ -1011,6 +1046,37 @@ every id mint throws. That is the trap waiting for M9's real-phone test.
 No `404.html` and no `.nojekyll`: there is no router, so there are no deep links
 to fall back from, and `upload-pages-artifact` deploys the tarball without ever
 running Jekyll.
+
+## Milestone 11.5 — prune ✅
+
+A post-release sweep for things the codebase carried but never used. No
+behaviour change except one addition, below.
+
+- Deleted `card.tsx`, `label.tsx` and `select.tsx` — 328 lines of shadcn
+  scaffold with no importer. `dialog.tsx` lost `DialogTrigger` and
+  `DialogClose`, `button.tsx` lost `buttonVariants`; same reason.
+- `loadDoc`, `requestPersistence`, `PdfResult`, `CompileResult` and
+  `CompileState` are module-private now. Every one had a single caller, inside
+  its own file.
+- The four `@fontsource-variable` imports left `index.css`, along with the
+  commented-out `--font-sans` block they fed. Everything has been drawn in
+  Libertinus since M6.8, so four webfont families were bundling for nothing.
+- `tailwindcss`, `@tailwindcss/vite`, `shadcn` and `tw-animate-css` moved to
+  `devDependencies` — all build-time, and `shadcn` is a CLI.
+- `navigate.ts`'s `block()` skipped `oneline` before a `"body" in it` guard that
+  already excludes it. Two unreachable lines.
+- `sample/*.typ` deleted, its two reference PDFs moved to `.agents/`, and
+  `sample/` gitignored except `content-en.json`. Those were the M2 spike's
+  hand-written inputs; `cv.typ` has been the source of truth since M4.
+
+### The status toast reports the compile
+
+`useCompiledCV` now returns `ms` — `compileMs + renderMs`, held from the last
+*successful* compile so a failing keystroke does not blank it — and the settled
+toast reads `Saved · 8 ms`. Both halves were already crossing the worker
+boundary and being discarded. It is the cheapest available answer to Q5: point
+a phone at the live URL and the number is on screen while you type on it.
+
 
 ---
 
