@@ -19,6 +19,8 @@ Template: [silver-dev-cv](https://typst.app/universe/package/silver-dev-cv).
 - [ ] Download artifacts (TYP, JSON, PDF) as a single ZIP file.
 - [ ] Fix iOS PWA download issue (Safari limitation).
 - [ ] Bundle size reduction: remove unused code, optimize WASM, etc.
+- [ ] Add support for multiple CVs to be managed in the same instance (e.g., via tabs or a list, allowing to have multiple CVs open at once).
+- [ ] i18n: add support for multiple languages (e.g., English, Spanish, etc.) and allow switching between them.
 
 
 ## Development
@@ -28,6 +30,7 @@ Template: [silver-dev-cv](https://typst.app/universe/package/silver-dev-cv).
     pnpm build      # tsc -b && vite build
     pnpm lint       # oxlint
     pnpm preview    # serve the production build
+    pnpm test       # run tests
 
 ## Credits and licensing
 
