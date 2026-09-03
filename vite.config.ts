@@ -18,7 +18,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       manifest: {
         id: BASE,
         name: "CV Maker",
@@ -59,6 +59,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // `prompt` drops the autoUpdate defaults; without the claim the new
+        // worker activates but never takes over this page, so no reload
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,typ,otf,svg,png,ico}"],
         globIgnores: ["**/screenshot-*.png"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB

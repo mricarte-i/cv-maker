@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-09-03 (accessibility)
+Last updated: 2026-09-03 (pwa updates)
 
 ---
 
@@ -978,9 +978,51 @@ place that truth gets written down.
       not say so anywhere except Application → Manifest. `globIgnores` keeps
       them out of the precache: the install prompt fetches them once, over the
       network, before the app is ever installed.
-- [ ] SW update prompt
+- [x] SW updates — an auto-reload on resume rather than a prompt (below)
 - [ ] Offline verification on a real phone
 - [ ] Revisit WASM download size
+
+### Nothing was checking for a new worker
+
+An installed copy on a phone kept serving its cached build until it was pulled
+down to refresh. `registerType: "autoUpdate"` was not the problem — it only
+governs what a *found* worker does. The generated `registerSW.js` is one line:
+
+```js
+if('serviceWorker' in navigator) {window.addEventListener('load', () =>
+  navigator.serviceWorker.register('/cv-maker/sw.js', { scope: '/cv-maker/' }))}
+```
+
+It registers on `load` and never looks again. Resuming a standalone PWA from
+the background is not a `load`, so nothing ever asked. Pull-to-refresh is a
+navigation, which re-runs that line — hence the one gesture that worked.
+
+`src/pwa.ts` asks on the way back in: `registration.update()` on
+`visibilitychange` when the document turns visible. Both halves are native, so
+there is no `virtual:pwa-register`, no `injectRegister` change, and no new
+dependency — the injected script still does the registering.
+
+**Resume is also the safe moment to reload.** `autoUpdate` gives the worker
+`skipWaiting` and `clientsClaim`, so a new one takes control the instant
+`update()` finds it — but the page keeps running the old chunks until it
+reloads, so the reload is the half that actually ships the new version. It is
+free of consequence here because `useAutosave` already flushes to IndexedDB on
+`visibilitychange → hidden`: the document went to disk when you left, so the
+500 ms `SAVE_MS` debounce has nothing left to lose when you come back.
+
+Two things the eight lines are careful about:
+
+- **`controllerchange` fires on first install too.** The listener is only
+  attached when `navigator.serviceWorker.controller` already exists, or every
+  first visit would reload a page that had just loaded.
+- **No `setInterval`.** An hourly `update()` for a tab left open is the obvious
+  addition, and its reload can land mid-keystroke — a path the hidden-flush does
+  not cover, so it would eat up to 500 ms of typing. Add it when someone
+  actually leaves the app open for a day, paired with a `pagehide` flush.
+
+The road not taken was `registerType: 'prompt'` — a toast offering the reload.
+For a single-document editor that reloads into the same autosaved document,
+asking buys nothing over doing it at a moment already known to be safe.
 
 ### The icon is the app's own copy-mark
 
@@ -1255,4 +1297,4 @@ helped users and still failed the check.
 | 2 | Multi-language | — | leaning separate documents; `sys.inputs` available either way |
 | 3 | Multiple CVs vs one | M7 | ✅ **resolved** — one. A switcher needs doc-level `id`/`label` (a v3 migration), a `doc/replace` action, a flush-on-switch fix for the autosave debounce, and delete/rename/duplicate. M10's `content.json` round-trip covers the real use case (tailor a copy per application) for free. `CVDocument` is self-contained and versioned, so adding a library wrapper later stays cheap. |
 | 4 | Section labels free text or preset | M6 | ✅ **resolved** — free text |
-| 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip). The hidden-pane compile is gone (M6.9) and the status toast now prints the round trip, so the phone answer is one visit to the live URL away — but nobody has made that visit yet. Use the deployed HTTPS site, not a LAN dev URL: see `newId` in M12. |
+| 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip). The hidden-pane compile is gone (M6.9) and the status toast now prints the round trip, and the app is now installed on a phone — so the number only needs reading off the toast, which nobody has reported yet. Use the deployed HTTPS site, not a LAN dev URL: see `newId` in M12. |

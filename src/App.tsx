@@ -53,6 +53,7 @@ import {
   MenuTrigger,
 } from "./ui/Menu";
 import { useHistory } from "./state/history";
+import { UpdateDialog } from "./ui/UpdateDialog";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -451,6 +452,7 @@ function Editor({ initial }: { initial: CVDocument }) {
             <Preview svg={svg} />
           )}
 
+          <UpdateDialog />
           <StatusToast {...status} />
           <CompileErrorDialog error={error} />
         </main>
