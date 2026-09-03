@@ -8,7 +8,17 @@ import { BlockEditor } from "./BlockEditor";
 import { Input } from "@/components/ui/input";
 import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
-import { Chip, FIELD, Mark, Rail, Row, TEXT } from "./Row";
+import {
+  Chip,
+  FIELD,
+  LABEL,
+  META,
+  Mark,
+  Rail,
+  Row,
+  TEXT,
+  SLOTS as cSLOTS,
+} from "./Row";
 import { AddMenu } from "./Menu";
 
 type Field = "title" | "subtitle" | "date" | "location";
@@ -192,9 +202,9 @@ export function ItemEditor({
     case "tags":
       return (
         <Shell {...frame} kind={item.kind}>
-          <div className="flex min-w-0 items-start gap-2">
+          <div className={cn(cSLOTS, "@xs:items-start")}>
             <Input
-              className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
+              className={cn("h-7 font-medium", LABEL, TEXT, FIELD)}
               placeholder="title"
               value={item.title}
               onChange={(e) =>
@@ -218,9 +228,9 @@ export function ItemEditor({
     case "oneline":
       return (
         <Shell {...frame} kind={item.kind}>
-          <div className="flex gap-2">
+          <div className={cSLOTS}>
             <Input
-              className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
+              className={cn("h-7 font-medium", LABEL, TEXT, FIELD)}
               placeholder="title"
               value={item.title}
               onChange={(e) =>
@@ -277,31 +287,38 @@ export function ItemEditor({
 
       return (
         <Shell {...frame} kind={item.kind}>
-          {/* the same two-line, four-slot geometry the template prints */}
+          {/* the two-line, four-slot geometry the template prints — until the
+              row is narrower than a printed line, and the slots stack */}
           <div className="flex items-baseline gap-2">
             <Chip onClick={() => set({ variant: NEXT[item.variant] })}>
               {CHIP[item.variant]}
             </Chip>
-            <div className="flex min-w-0 flex-1 items-baseline gap-1">
-              {s.topLeft.map((f, i) => (
-                <Fragment key={f}>
-                  {i > 0 && <span className="text-pencil">,</span>}
-                  {field(f, i === 0 ? "min-w-0 flex-1" : "w-28 shrink")}
-                </Fragment>
-              ))}
+            <div className={cn(cSLOTS, "flex-1")}>
+              <div className={cn(cSLOTS, "flex-1 @xs:gap-1")}>
+                {s.topLeft.map((f, i) => (
+                  <Fragment key={f}>
+                    {i > 0 && (
+                      <span className="text-pencil hidden @xs:inline">,</span>
+                    )}
+                    {field(
+                      f,
+                      i === 0 ? "min-w-0 flex-1" : "w-full @xs:w-28 @xs:shrink",
+                    )}
+                  </Fragment>
+                ))}
+              </div>
+              {s.topRight && field(s.topRight, META)}
             </div>
-            {s.topRight && field(s.topRight, "w-32 shrink-0 text-right")}
           </div>
 
           {(s.bottomLeft || s.bottomRight) && (
-            <div className="flex items-baseline gap-2">
+            <div className={cSLOTS}>
               {s.bottomLeft ? (
                 field(s.bottomLeft, "min-w-0 flex-1")
               ) : (
                 <div className="flex-1" />
               )}
-              {s.bottomRight &&
-                field(s.bottomRight, "w-32 shrink-0 text-right")}
+              {s.bottomRight && field(s.bottomRight, META)}
             </div>
           )}
 

@@ -34,12 +34,16 @@ import {
   Sun,
   Redo2,
   Undo2,
+  FileText,
+  PenLine,
+  Download,
+  LoaderCircle,
 } from "lucide-react";
 import { StatusToast } from "./ui/StatusToast";
 import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { cn } from "./lib/utils";
 import { useTheme } from "./ui/theme";
-import { Rail } from "./ui/Row";
+import { Rail, SLOTS } from "./ui/Row";
 import { useDispatch } from "./ui/dispatch";
 import {
   MenuContent,
@@ -87,25 +91,33 @@ function useMediaQuery(query: string) {
   );
 }
 
+const TABS = { write: PenLine, preview: FileText } as const;
+
 function TabSwitch({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   return (
-    <div className="border-border flex overflow-hidden rounded-sm border md:hidden">
-      {(["write", "preview"] as const).map((t) => (
-        <button
-          key={t}
-          type="button"
-          aria-pressed={tab === t}
-          onClick={() => setTab(t)}
-          className={cn(
-            "px-3 py-1 text-xs tracking-wide capitalize transition-colors",
-            tab === t
-              ? "bg-primary text-primary-foreground"
-              : "text-pencil hover:bg-muted",
-          )}
-        >
-          {t}
-        </button>
-      ))}
+    <div className="border-border flex shrink-0 overflow-hidden rounded-sm border md:hidden">
+      {(["write", "preview"] as const).map((t) => {
+        const Icon = TABS[t];
+        return (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={tab === t}
+            aria-label={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              "flex items-center gap-1.5 px-2 py-1 text-xs tracking-wide capitalize transition-colors",
+              tab === t
+                ? "bg-primary text-primary-foreground"
+                : "text-pencil hover:bg-muted",
+            )}
+          >
+            <Icon className="size-3.5" />
+            {/* the tab you are on says its name; the other is just its mark */}
+            {tab === t && t}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -198,8 +210,21 @@ function EditorTopbar({
           <Redo2 />
         </Button>
 
-        <Button size="xs" disabled={pdfBusy} onClick={onPdf}>
-          {pdfBusy ? "compiling…" : "download pdf"}
+        <Button
+          size="xs"
+          disabled={pdfBusy}
+          onClick={onPdf}
+          aria-label={pdfBusy ? "Compiling PDF" : "Download PDF"}
+          className="max-md:size-7 max-md:px-0"
+        >
+          {pdfBusy ? (
+            <LoaderCircle className="animate-spin md:hidden" />
+          ) : (
+            <Download className="md:hidden" />
+          )}
+          <span className="max-md:hidden">
+            {pdfBusy ? "compiling…" : "download pdf"}
+          </span>
         </Button>
 
         <MenuRoot>
@@ -267,7 +292,7 @@ function EditorPane({ doc }: { doc: CVDocument }) {
   return (
     <div className="relative h-full">
       <aside className="h-full space-y-4 overflow-y-auto py-4 pr-4 pl-8">
-        <div>
+        <div className="@container">
           <Input
             placeholder="your name"
             className="h-8 border-b-transparent font-serif text-xl font-bold md:text-xl"
@@ -280,7 +305,7 @@ function EditorPane({ doc }: { doc: CVDocument }) {
               })
             }
           />
-          <div className="flex items-baseline gap-2">
+          <div className={SLOTS}>
             <Input
               placeholder="city, country"
               className="h-7 border-b-transparent text-sm"
@@ -293,19 +318,21 @@ function EditorPane({ doc }: { doc: CVDocument }) {
                 })
               }
             />
-            <span className="text-pencil shrink-0 text-xs">last updated</span>
-            <Input
-              placeholder="2026-01-31"
-              className="text-pencil h-7 w-28 shrink-0 border-b-transparent text-right text-sm"
-              value={doc.date}
-              onChange={(e) =>
-                dispatch({
-                  type: "doc/set",
-                  field: "date",
-                  value: e.target.value,
-                })
-              }
-            />
+            <div className="flex shrink-0 items-baseline gap-2">
+              <span className="text-pencil shrink-0 text-xs">last updated</span>
+              <Input
+                placeholder="2026-01-31"
+                className="text-pencil h-7 w-28 shrink-0 border-b-transparent text-right text-sm"
+                value={doc.date}
+                onChange={(e) =>
+                  dispatch({
+                    type: "doc/set",
+                    field: "date",
+                    value: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
         </div>
 

@@ -7,6 +7,18 @@ export const FIELD =
 /** compact single-line-ish text field */
 export const TEXT = "min-h-0 py-0.5 text-sm leading-6";
 
+/** the print geometry needs a printed line's width. below 20rem of row the
+    slots stack, one field per line. @container, not a breakpoint — a desktop
+    split dragged narrow is the same problem as a phone */
+export const SLOTS =
+  "flex min-w-0 flex-col @xs:flex-row @xs:items-baseline @xs:gap-2";
+
+/** the label column — full width stacked, fixed once it sits beside its field */
+export const LABEL = "w-full @xs:w-28 @xs:shrink-0";
+
+/** the right-hand meta slot: date, location. right-aligned only in print order */
+export const META = "w-full @xs:w-32 @xs:shrink-0 @xs:text-right";
+
 export function Rail({
   id,
   className,
@@ -39,7 +51,7 @@ export function Row({
       <div className="flex w-6 shrink-0 justify-center pt-1 select-none">
         {marker}
       </div>
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="@container min-w-0 flex-1">{children}</div>
       <div
         className={cn(
           "flex w-6 shrink-0 justify-center pt-0.5 opacity-0 transition-opacity",

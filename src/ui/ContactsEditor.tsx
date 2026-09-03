@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useDispatch } from "./dispatch";
 import { Input } from "@/components/ui/input";
 import { DragHandle, RowMenu, SortableList } from "./Sortable";
-import { AddButton, FIELD, Mark, Row, TEXT } from "./Row";
+import { AddButton, FIELD, LABEL, Mark, Row, SLOTS, TEXT } from "./Row";
 import { focusAfterRender, rowKey, useFocusClaim } from "./focus";
 
 const CONTACTS: ListRef = { kind: "contacts" };
@@ -48,10 +48,10 @@ function ContactRow({
 
   return (
     <Row marker={<DragHandle marker={<Mark>@</Mark>} />} end={<RowMenu />}>
-      <div className="flex min-w-0 items-baseline gap-2">
+      <div className={SLOTS}>
         <Input
           ref={ref}
-          className={cn("h-7 w-28 shrink-0 font-medium", TEXT, FIELD)}
+          className={cn("h-7 font-medium", LABEL, TEXT, FIELD)}
           placeholder="label"
           value={contact.text}
           onKeyDown={onKeyDown}
