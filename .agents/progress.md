@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-09-03
+Last updated: 2026-09-03 (tests)
 
 ---
 
@@ -786,8 +786,11 @@ subtraction problem.
 - [ ] Lift collapse state out of `SectionEditor` so "collapse all" can exist. A
       fully folded document is the outline view a phone actually wants, and
       `Summary` already renders it.
-- [ ] Pause `useCompiledCV` while the Preview tab is hidden. Likely closes Q5
-      without touching the debounce.
+- [x] Pause `useCompiledCV` while the Preview tab is hidden — `useCompiledCV`
+      takes an `active` flag, `wide || tab === "preview"`, and bails before the
+      timer when it is false. `active` is a dep, so flipping to Preview
+      recompiles through the same debounce; desktop pins it true and is
+      byte-for-byte the old path. The debounce was never touched.
 
 ### Hover-only affordances were already solved, by accident
 
@@ -1078,6 +1081,83 @@ boundary and being discarded. It is the cheapest available answer to Q5: point
 a phone at the live URL and the number is on screen while you type on it.
 
 
+## Milestone 12 — tests ✅
+
+30 tests, four files, ~200 ms. `pnpm test` is `vitest run`; `deploy.yml` runs it
+between `pnpm lint` and `pnpm build`, so a red test stops the release rather
+than being noticed afterwards.
+
+- [x] `schema/parse.test.ts` — the v1 → v3 path, on the real document
+- [x] `state/history.test.ts` — `coalesceKey` and the undo stack
+- [x] `state/reducer.test.ts` — reorder, duplicate, and the miss cases
+- [x] `state/transfer.test.ts` — `slug` and JSON import
+- [ ] `persist.ts` — the known gap (below)
+
+### No jsdom, and that was a choice about *what* to test
+
+Vitest inherits `vite.config.ts`, so the whole setup is one dev dependency and
+one script — no `vitest.config.ts`, no environment. The suite reports
+`environment 0ms` because every module under test is pure: migrations, a
+reducer, a history stack, a slug. Picking those four first is what kept jsdom
+out, and keeping jsdom out is what keeps the suite at 200 ms.
+
+`resolveJsonModule` went into `tsconfig.app.json` so the v1 fixture is an
+`import` rather than a `readFileSync` — the app project deliberately carries
+`"types": ["vite/client"]` and no node types, and reaching for `node:fs` in
+`src` does not typecheck.
+
+### The fixture was already in the repo
+
+`sample/content-en.json` is `"schemaVersion": 1` — the one file `.gitignore`
+keeps out of the `sample/` exclusion. Migrations are the only place in this app
+where a bug is silent: everything else fails on screen, but a bad v1 → v3 step
+eats a document that was saved months ago and says nothing. Testing
+`parseDocument` rather than `migrate` alone matches how it is actually called,
+and covers the pass-through in `mapArray`/`mapKey` — malformed input has to
+reach zod as a rejection, not throw on the way.
+
+### Identity is the contract, not equality
+
+`historyReducer` bails when immer hands back the base object, which is what
+stops retyping the same character from eating an undo slot. So the tests assert
+`toBe`, not `toEqual`, in three places: the no-op edit, the no-op drag
+(`from === to`), and every action naming an id that does not exist. `toEqual`
+passes on a structurally-equal clone and would let that contract rot silently
+— which would then show up as phantom undo steps, three modules away.
+
+`coalesceKey` and `historyReducer` needed exporting to be reached at all. The
+alternative was driving `useHistory` through React and jsdom for logic that is
+pure, and `coalesceKey` is worth exporting on its own: it *is* the written rule
+for what counts as one undo. `IDLE_MS` stays uncovered — that decision lives in
+the hook's ref, not the reducer.
+
+### `typst/client.ts` is the edge of what node can import
+
+It constructs its `Worker` at module scope, so *any* module reachable from it is
+un-importable outside a browser — `transfer.ts` imports `compilePdf` for
+`downloadPdf` and that alone was enough to fail the file before a single test
+ran. The test stubs it with `vi.mock`; making the worker lazy to suit a test
+would have traded away the warm start that M8's `pdfBusy` is built around.
+
+That boundary, not effort, is what puts `useCompiledCV` and the PDF path below
+the line. `persist.ts` is the one gap worth naming: it is the only module where
+a bug loses real work, and it is also the only one that would cost a dependency
+(`fake-indexeddb`) plus jsdom, with `loadDoc` private again since M11.5. Add it
+the first time a document fails to come back.
+
+### One bug, found by writing the tests rather than running them
+
+`slug()` stripped every character outside `[a-z0-9]`, accents included, so the
+author of this document downloaded `mat-as-ricarte.pdf`. `normalize("NFD")` and
+a combining-marks strip, ahead of the existing chain, and it is
+`matias-ricarte`. `"José A. Ñuñez"` → `jose-a-nunez`.
+
+Unrelated but adjacent: `newId` is `crypto.randomUUID()`, which exists only in a
+secure context. Node has no such rule, so the suite mints ids happily — but a
+phone pointed at `http://192.168.x.x:5173` throws on every add. Hence the
+comment on `newId`, and hence Q5 wanting the deployed URL.
+
+
 ---
 
 ## Open questions
@@ -1088,4 +1168,4 @@ a phone at the live URL and the number is on screen while you type on it.
 | 2 | Multi-language | — | leaning separate documents; `sys.inputs` available either way |
 | 3 | Multiple CVs vs one | M7 | ✅ **resolved** — one. A switcher needs doc-level `id`/`label` (a v3 migration), a `doc/replace` action, a flush-on-switch fix for the autosave debounce, and delete/rename/duplicate. M10's `content.json` round-trip covers the real use case (tailor a copy per application) for free. `CVDocument` is self-contained and versioned, so adding a library wrapper later stays cheap. |
 | 4 | Section labels free text or preset | M6 | ✅ **resolved** — free text |
-| 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip); a phone can finally be pointed at the live URL, and M6.9 still owes the pause-while-the-preview-is-hidden fix |
+| 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip). The hidden-pane compile is gone (M6.9) and the status toast now prints the round trip, so the phone answer is one visit to the live URL away — but nobody has made that visit yet. Use the deployed HTTPS site, not a LAN dev URL: see `newId` in M12. |
