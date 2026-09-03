@@ -429,7 +429,7 @@ function Editor({ initial }: { initial: CVDocument }) {
           canUndo={canUndo}
           canRedo={canRedo}
         />
-        <div className="relative min-h-0 flex-1">
+        <main className="relative min-h-0 flex-1">
           {wide ? (
             <ResizablePanelGroup
               orientation="horizontal"
@@ -453,7 +453,7 @@ function Editor({ initial }: { initial: CVDocument }) {
 
           <StatusToast {...status} />
           <CompileErrorDialog error={error} />
-        </div>
+        </main>
       </div>
     </DispatchCtx>
   );

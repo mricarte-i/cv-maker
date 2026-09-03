@@ -59,7 +59,7 @@
   --chart-5: oklch(0.47 0.157 37.304);
   --paper: oklch(0.945 0.003 80);
   --rule: oklch(0.3 0.006 50);
-  --pencil: oklch(0.68 0.012 60);
+  --pencil: oklch(0.53 0.012 60);
   --rail: oklch(0.9 0.004 60);
   --rail-lit: oklch(0.72 0.09 38);
   --radius: 0.625rem;
@@ -98,7 +98,7 @@
   --input: oklch(0.42 0.008 60);
   --ring: oklch(0.72 0.1 55);
   --paper: oklch(0.285 0.007 60);
-  --pencil: oklch(0.63 0.012 65);
+  --pencil: oklch(0.66 0.012 65);
   --rail: oklch(0.36 0.006 60);
   /* ember, not alarm-red — see the note above */
   --rail-lit: oklch(0.7 0.09 58);

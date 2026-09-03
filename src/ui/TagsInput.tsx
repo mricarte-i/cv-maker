@@ -149,6 +149,7 @@ export function TagsInput({
         </SortableList>
 
         <input
+          aria-label="add tag"
           className="min-w-24 flex-1 bg-transparent text-sm outline-none"
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}

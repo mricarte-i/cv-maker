@@ -95,7 +95,8 @@ export function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        "shrink-0 rounded-sm px-1 py-px text-[10px] font-medium tracking-[0.08em]",
+        "inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-sm px-1",
+        "py-px text-[10px] font-medium tracking-[0.08em]",
         "text-pencil uppercase transition-colors hover:bg-muted hover:text-foreground",
       )}
     >

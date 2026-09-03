@@ -14,6 +14,7 @@ export function Preview({ svg }: { svg: string }) {
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b px-2 py-1">
         <Button
+          aria-label="Zoom out"
           variant="ghost"
           size="icon-xs"
           disabled={step === 0}
@@ -22,6 +23,7 @@ export function Preview({ svg }: { svg: string }) {
           <Minus />
         </Button>
         <Button
+          aria-label="Zoom in"
           variant="ghost"
           size="xs"
           className="w-16 tabular-nums"
