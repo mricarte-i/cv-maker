@@ -9,6 +9,7 @@ import {
   type Tag,
 } from "./cv";
 
+// ASSUMES HTTPS OR localhost
 export const newId = () => crypto.randomUUID();
 
 export const emptyParagraph = (): Block => ({

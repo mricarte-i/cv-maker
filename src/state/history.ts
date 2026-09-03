@@ -13,7 +13,7 @@ const IDLE_MS = 600;
  * Anything structural (adds, removes, moves, duplicates, doc/replace) returns
  * null and always starts a fresh entry.
  */
-const coalesceKey = (a: Action): string | null => {
+export const coalesceKey = (a: Action): string | null => {
   const fields = (patch: object) => Object.keys(patch).sort().join(",");
 
   switch (a.type) {
@@ -50,7 +50,7 @@ type HistoryAction =
   | { type: "history/undo" }
   | { type: "history/redo" };
 
-const historyReducer = (s: State, h: HistoryAction): State => {
+export const historyReducer = (s: State, h: HistoryAction): State => {
   switch (h.type) {
     case "history/undo": {
       const prev = s.past.at(-1);
