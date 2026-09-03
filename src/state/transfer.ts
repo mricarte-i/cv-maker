@@ -3,8 +3,10 @@ import { parseDocument, type ParseResult } from "../schema/parse";
 import { compilePdf } from "../typst/client";
 
 /** `matias-ricarte`, or null before there is a name to slug */
-function slug(doc: CVDocument): string | null {
+export function slug(doc: CVDocument): string | null {
   const s = doc.name
+    .normalize("NFD") // decompose, so the accent strips instead of the letter
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
