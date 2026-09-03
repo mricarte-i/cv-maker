@@ -54,6 +54,7 @@ import {
 } from "./ui/Menu";
 import { useHistory } from "./state/history";
 import { UpdateDialog } from "./ui/UpdateDialog";
+import { AboutDialog } from "./ui/AboutDialog";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -147,7 +148,7 @@ function EditorTopbar({
       dispatch({ type: "doc/replace", doc: make() });
     }
   };
-
+  const [about, setAbout] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,6 +251,8 @@ function EditorTopbar({
             >
               Load the sample CV
             </MenuItem>
+            <MenuSeparator />
+            <MenuItem onClick={() => setAbout(true)}>About</MenuItem>
             <MenuItem
               className="text-destructive data-highlighted:bg-destructive data-highlighted:text-primary-foreground"
               onClick={() =>
@@ -263,6 +266,8 @@ function EditorTopbar({
             </MenuItem>
           </MenuContent>
         </MenuRoot>
+
+        <AboutDialog open={about} onOpenChange={setAbout} />
 
         <input
           ref={fileInput}

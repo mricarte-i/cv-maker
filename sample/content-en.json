@@ -110,6 +110,25 @@
               ]
             }
           ]
+        },
+        {
+          "kind": "entry",
+          "id": "i-cvm",
+          "variant": "project",
+          "title": "CV Maker",
+          "subtitle": "",
+          "date": "2026",
+          "location": "",
+          "body": [
+            {
+              "kind": "bullets",
+              "id": "b-cvm",
+              "items": [
+                "Developed an editor for creating and exporting CVs with the silver-dev-cv template, with simple support for PWA.",
+                "Allows user to preview their changes in real-time using typst.ts and export the curriculum as a PDF."
+              ]
+            }
+          ]
         }
       ]
     },

@@ -9,6 +9,12 @@ const BASE = "/cv-maker/";
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE,
+  // a visible build stamp: the cheapest proof that an update actually landed
+  define: {
+    __BUILD__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace("T", " "),
+    ),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
