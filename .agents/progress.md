@@ -3,7 +3,7 @@
 Companion to [plan.md](plan.md). The plan says *what* and *why*; this says
 *what's done* and *what was measured*. Update as milestones close.
 
-Last updated: 2026-09-03 (pwa updates)
+Last updated: 2026-09-03 (about dialog)
 
 ---
 
@@ -978,7 +978,7 @@ place that truth gets written down.
       not say so anywhere except Application → Manifest. `globIgnores` keeps
       them out of the precache: the install prompt fetches them once, over the
       network, before the app is ever installed.
-- [x] SW updates — an auto-reload on resume rather than a prompt (below)
+- [x] SW updates — check on resume, then ask before reloading (below)
 - [ ] Offline verification on a real phone
 - [ ] Revisit WASM download size
 
@@ -1020,9 +1020,49 @@ Two things the eight lines are careful about:
   not cover, so it would eat up to 500 ms of typing. Add it when someone
   actually leaves the app open for a day, paired with a `pagehide` flush.
 
-The road not taken was `registerType: 'prompt'` — a toast offering the reload.
-For a single-document editor that reloads into the same autosaved document,
-asking buys nothing over doing it at a moment already known to be safe.
+### Then the auto-reload was walked back
+
+The first version reloaded on its own, on the reasoning that resume is a safe
+moment because the document was flushed on the way out. That is true only if
+the swap is instant, and it is not: the new worker precaches ~1.9 MB before it
+activates, so `controllerchange` can land **seconds** after resume — by which
+time you are typing, on a path the hidden-flush does not cover. Same 500 ms
+exposure as the `setInterval` above, arriving through the front door.
+
+So `registerType` is `"prompt"` now and `UpdateDialog` asks. Dismissing is
+one-way for the session (`later`, the same shape as `CompileErrorDialog`'s
+`seen`); the worker stays parked, so the next launch offers it again.
+
+**`prompt` quietly drops two workbox settings, and one of them is load-bearing.**
+The plugin only sets them for `autoUpdate` —
+
+```js
+if ((injectRegister === "auto" || injectRegister == null) && registerType === "autoUpdate") {
+  workbox.skipWaiting = true;
+  workbox.clientsClaim = true;
+}
+```
+
+— so switching to `prompt` falls back to workbox's defaults. `skipWaiting:
+false` is exactly what is wanted: it is what makes workbox generate the
+`SKIP_WAITING` message listener the dialog posts to. But `clientsClaim: false`
+means the new worker activates and **never takes control of the open page**, so
+`controllerchange` never fires and the reload never happens — a dialog whose
+button does nothing, with no error anywhere. `clientsClaim: true` goes back in
+the `workbox` block by hand.
+
+### About, and a build stamp
+
+`AboutDialog` is what the app is, what it is powered by, and the credits —
+lifted from the README's *Credits and licensing*, which means the two will now
+drift independently. It hangs off a `MenuItem` in the existing overflow menu
+rather than a new topbar button, because M6.9 spent real effort getting that bar
+into 390 px.
+
+It carries `__BUILD__`, a timestamp inlined by `define` in `vite.config.ts`.
+That exists for the update flow above: without it a deploy proves the bundle
+changed, and with it you can read the stamp on both sides of a reload and know
+the swap actually happened.
 
 ### The icon is the app's own copy-mark
 
