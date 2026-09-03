@@ -4,9 +4,10 @@ import { compileCv, initCompiler, type Diagnostic } from "./client";
 
 const DEBOUNCE_MS = 200;
 
-export type CompileState = {
+type CompileState = {
   svg: string; // last good render; "" until the first success
   diagnostics: Diagnostic[];
+  ms: number; // last successful compile + render
   error: string | null; // set when the *latest* compile failed
   pending: boolean;
   ready: boolean; // compiler initialised
@@ -16,6 +17,7 @@ export function useCompiledCV(doc: CVDocument): CompileState {
   const [state, setState] = useState<CompileState>({
     svg: "",
     diagnostics: [],
+    ms: 0,
     error: null,
     pending: true,
     ready: false,
@@ -42,6 +44,7 @@ export function useCompiledCV(doc: CVDocument): CompileState {
         ready: true,
         pending: false,
         diagnostics: r.diagnostics,
+        ms: r.ok ? r.compileMs + r.renderMs : s.ms,
         svg: r.ok ? r.svg : s.svg, // keep last good
         error: r.ok ? null : (r.error ?? "compile failed"),
       }));

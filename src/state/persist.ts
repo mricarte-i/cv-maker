@@ -73,7 +73,7 @@ function readLegacy(): CVDocument | null {
   }
 }
 
-export async function loadDoc(): Promise<CVDocument | null> {
+async function loadDoc(): Promise<CVDocument | null> {
   const legacy = readLegacy(); // read, but do not clear yet
 
   let stored: unknown;
@@ -106,7 +106,7 @@ export async function loadDoc(): Promise<CVDocument | null> {
  *  heuristics; Firefox shows a permission prompt — so only ask once there is
  *  actually a saved document to lose.
  */
-export async function requestPersistence(): Promise<boolean> {
+async function requestPersistence(): Promise<boolean> {
   if (!navigator.storage) {
     return false;
   }

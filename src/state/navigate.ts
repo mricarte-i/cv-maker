@@ -21,9 +21,6 @@ export const item = (doc: Draft<CVDocument>, id: string) => {
 export const block = (doc: Draft<CVDocument>, id: string) => {
   for (const s of doc.sections) {
     for (const it of s.items) {
-      if (it.kind === "oneline") {
-        continue;
-      }
       if (!("body" in it)) {
         continue;
       }

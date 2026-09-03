@@ -370,7 +370,7 @@ function Editor({ initial }: { initial: CVDocument }) {
   const wide = useMediaQuery("(min-width: 768px)");
   const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(initial);
   const save = useAutosave(doc);
-  const { svg, error, pending, ready } = useCompiledCV(doc);
+  const { svg, error, pending, ready, ms } = useCompiledCV(doc);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "cv-maker-panels",
     storage: window.localStorage,
@@ -383,7 +383,7 @@ function Editor({ initial }: { initial: CVDocument }) {
         ? { label: "Could not save", settled: false }
         : save === "saving"
           ? { label: "Saving…", settled: false }
-          : { label: "Saved", settled: true };
+          : { label: `Saved · ${Math.round(ms)} ms`, settled: true };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
