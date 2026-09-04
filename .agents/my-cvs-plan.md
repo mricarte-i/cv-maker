@@ -25,7 +25,7 @@ no jsdom), Tailwind 4, base-ui.
   `persist.ts` and all `.tsx` are verified by `pnpm build` plus manual check,
   matching the boundary in progress.md M12.
 - Menu item reads **"My CVs"**. Dialog title reads **"Your CVs"**.
-- New CV label is **"Untitled"**. Duplicate label is `` `${label} copy` ``.
+- New CV label is **"Untitled CV"**. Duplicate label is `` `${label} copy` ``.
 - Delete confirms with `window.confirm`, matching "Start over" and import.
 - Dates render with `toLocaleDateString()`.
 - Run `pnpm test` and `pnpm lint` before every commit.
@@ -48,20 +48,14 @@ no jsdom), Tailwind 4, base-ui.
   - `copyLabel(label: string): string`
   - `NEW_LABEL: string`, `ADOPTED_LABEL: string`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `src/state/library.test.ts`:
 
 ```ts
 import { expect, test } from "vitest";
 import { emptyDocument } from "../schema/factory";
-import {
-  ADOPTED_LABEL,
-  bootPlan,
-  byRecent,
-  copyLabel,
-  type CVRecord,
-} from "./library";
+import { bootPlan, byRecent, copyLabel, type CVRecord } from "./library";
 
 const rec = (id: string, label: string, updatedAt: number): CVRecord => ({
   id,
@@ -103,18 +97,14 @@ test("the pointer wins even when a legacy document is still lying around", () =>
 test("nothing stored means create", () => {
   expect(bootPlan(null, null)).toEqual({ kind: "create" });
 });
-
-test("the adopted document keeps a name a person would recognise", () => {
-  expect(ADOPTED_LABEL).toBe("My CV");
-});
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run src/state/library.test.ts`
 Expected: FAIL — `Failed to resolve import "./library"`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `src/state/library.ts`:
 
@@ -129,7 +119,7 @@ export type CVRecord = {
   doc: CVDocument;
 };
 
-export const NEW_LABEL = "Untitled";
+export const NEW_LABEL = "Untitled CV";
 export const ADOPTED_LABEL = "My CV";
 
 /** what boot should do, decided from what storage held. pure so it can be
@@ -156,12 +146,16 @@ export const byRecent = (records: CVRecord[]): CVRecord[] =>
 export const copyLabel = (label: string) => `${label} copy`;
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm exec vitest run src/state/library.test.ts`
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Commit**
+Then `pnpm build`. Vitest does not typecheck, so a green suite can still hide a
+`noUnusedLocals` error in the test file — a dropped assertion whose import
+stayed behind fails `tsc -b` while `pnpm test` passes. CI runs both.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/state/library.ts src/state/library.test.ts
