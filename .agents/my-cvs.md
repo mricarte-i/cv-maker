@@ -84,9 +84,10 @@ that cannot await, for no benefit over doing it on the next read.
 Two modules, split on the line the test suite already respects.
 
 **`src/state/library.ts` — pure, tested.**
-Sorting by `updatedAt`, search filtering, the default label on duplicate
-(`"${label} copy"`), and the *decision* the migration makes given what was found
-in storage. No IndexedDB anywhere in it.
+Sorting by `updatedAt`, the default label on duplicate (`"${label} copy"`), the
+*decision* the migration makes given what was found in storage, and all three
+search primitives from §6 — `strings`, `matches`, `cut`. No IndexedDB anywhere
+in it.
 
 **`src/state/persist.ts` — the IDB wrapper, untested.**
 Extended with `list`, `save`, `remove`, `setCurrent`. Stays thin enough that
@@ -117,7 +118,7 @@ A `MenuItem` labelled **"My CVs"** in the existing overflow menu — not a new
 topbar button, because M6.9 spent real effort fitting that bar into 390 px.
 It opens a Dialog titled **"Your CVs"**:
 
-- a search input, filtering by label, substring, case-insensitive
+- a search input, matching label *and* document content (below)
 - rows sorted by `updatedAt` descending, the current one marked
 - per row: label, last-edited date, and duplicate / rename / delete
 - a **New CV** action
@@ -137,6 +138,75 @@ matching "Start over" and import. Dates render with `toLocaleDateString()` — a
 "3 days ago" needs a bucket helper, and an absolute date is honest for free.
 
 Not "Open CV": it reads as OpenCV.
+
+### Search reaches inside the CVs
+
+Searching a skill or a project name — not just a label — is the point. It is
+also nearly free, because §2's one-record-per-CV shape means opening the modal
+already pulled every document body into memory. This is a third argument for
+that shape: the separate-index alternative holds only labels, so content search
+would have to go back to storage for all thirty bodies, and its advantage
+disappears exactly when you need it.
+
+**Harvest.** `strings(doc)` walks the document and collects every
+human-authored string, as an *array* — one entry per field, never joined. A
+joined haystack would let a snippet straddle two unrelated fields
+(`…Buenos Aires React hooks…`, a location abutting a bullet).
+
+```ts
+const strings = (v: unknown): string[] =>
+  typeof v === "string"
+    ? [v]
+    : Array.isArray(v)
+      ? v.flatMap(strings)
+      : typeof v === "object" && v !== null
+        ? Object.entries(v).flatMap(([k, x]) =>
+            k === "id" || k === "kind" || k === "variant" ? [] : strings(x),
+          )
+        : [];
+```
+
+The skipped keys are load-bearing, not tidiness: `kind` and `variant` are
+discriminators, and without them a search for *"project"* or *"education"*
+matches every CV in the library. Same recursive shape as the `ids()` helper in
+`reducer.test.ts`.
+
+**Match.** The query splits on whitespace and every token must appear as a
+case-insensitive substring in some field. Two lines more than a bare
+`includes`, and it covers the case that actually happens: you remember two words
+but not their order, so `"react hooks"` has to find *"hooks in React"*.
+
+**No fuzzy matching.** Typo tolerance was considered and rejected. Over ~5 KB of
+prose per CV, an edit distance loose enough to catch `raect` also catches half a
+library of overlapping vocabulary, so it needs scoring and ranking — a relevance
+system for thirty documents you wrote yourself. The deciding reason is smaller
+and harder to design around: fuzzy leaves no exact substring to highlight, so it
+breaks the snippet below, which is the whole reason content search is legible.
+
+**Snippet.** A content hit shows a window around it with the match marked, so a
+result is never unexplained. `cut` returns three parts rather than marked-up
+text, so the row renders `{before}<mark>{match}</mark>{after}` — no
+`dangerouslySetInnerHTML`, and no regex built from user input, which is where
+the escaping bugs live.
+
+```ts
+export function cut(text: string, token: string, pad = 30) {
+  const i = text.toLowerCase().indexOf(token);
+  const start = Math.max(0, i - pad);
+  const end = Math.min(text.length, i + token.length + pad);
+  return {
+    before: (start > 0 ? "…" : "") + text.slice(start, i),
+    match: text.slice(i, i + token.length),
+    after: text.slice(i + token.length, end) + (end < text.length ? "…" : ""),
+  };
+}
+```
+
+The snippet shows the first field containing the *first* token. Tokens can
+legitimately land in different fields — `react` in a bullet, `acme` in a
+subtitle — so no single field need hold all of them; showing the first hit is
+honest and needs no ranking story. A label match highlights the label and shows
+no content snippet. `<mark>` gets `bg-primary/20`.
 
 ## 7. Out of scope
 
