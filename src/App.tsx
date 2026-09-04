@@ -10,7 +10,7 @@ import contentEn from "../sample/content-en.json?raw";
 import { parseDocument } from "./schema/parse";
 import { emptyDocument } from "./schema/factory";
 import type { CVDocument } from "./schema/cv";
-import { useAutosave, useStoredDocument } from "./state/persist";
+import { setCurrentId, useAutosave, useBoot } from "./state/persist";
 import { type Action } from "./state/reducer";
 import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
 import { useCompiledCV } from "./typst/useCompiledCV";
@@ -53,8 +53,9 @@ import {
   MenuTrigger,
 } from "./ui/Menu";
 import { useHistory } from "./state/history";
-import { UpdateDialog } from "./ui/UpdateDialog";
 import { AboutDialog } from "./ui/AboutDialog";
+import type { CVRecord } from "./state/library";
+import { LibraryDialog } from "./ui/LibraryDialog";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -67,16 +68,27 @@ function sampleDocument(): CVDocument {
 }
 
 function App() {
-  const initial = useStoredDocument();
+  const booted = useBoot();
+  const [current, setCurrent] = useState<CVRecord | null>(null);
+  const record = current ?? booted;
 
-  if (!initial) {
+  if (!record) {
     return (
       <div className="grid h-screen place-items-center text-sm text-muted-foreground">
         loading…
       </div>
     );
   }
-  return <Editor initial={initial} />;
+  return (
+    <Editor
+      key={record.id}
+      record={record}
+      onSwitch={(r) => {
+        void setCurrentId(r.id);
+        setCurrent(r);
+      }}
+    />
+  );
 }
 
 type Tab = "write" | "preview";
@@ -133,6 +145,7 @@ function EditorTopbar({
   redo,
   canUndo,
   canRedo,
+  onOpenLibrary,
 }: {
   doc: CVDocument;
   dispatch: React.ActionDispatch<[a: Action]>;
@@ -142,6 +155,7 @@ function EditorTopbar({
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onOpenLibrary: () => void;
 }) {
   const replace = (make: () => CVDocument, prompt: string) => {
     if (window.confirm(prompt)) {
@@ -251,6 +265,8 @@ function EditorTopbar({
             >
               Load the sample CV
             </MenuItem>
+            <MenuSeparator />
+            <MenuItem onClick={onOpenLibrary}>My CVs</MenuItem>
             <MenuSeparator />
             <MenuItem onClick={() => setAbout(true)}>About</MenuItem>
             <MenuItem
@@ -371,11 +387,20 @@ function EditorPane({ doc }: { doc: CVDocument }) {
 }
 
 /** mounts once the stored document has been read, so `initial` never changes */
-function Editor({ initial }: { initial: CVDocument }) {
+function Editor({
+  record,
+  onSwitch,
+}: {
+  record: CVRecord;
+  onSwitch: (r: CVRecord) => void;
+}) {
+  const [library, setLibrary] = useState(false);
   const [tab, setTab] = useState<Tab>("write");
   const wide = useMediaQuery("(min-width: 768px)");
-  const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(initial);
-  const save = useAutosave(doc);
+  const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(
+    record.doc,
+  );
+  const save = useAutosave({ ...record, doc });
   // above md both panes are visible, so the preview is always active
   // below it, compiling when it isn't on screen doesn't make sense
   // and wastes the phone's battery
@@ -434,6 +459,7 @@ function Editor({ initial }: { initial: CVDocument }) {
           redo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
+          onOpenLibrary={() => setLibrary(true)}
         />
         <main className="relative min-h-0 flex-1">
           {wide ? (
@@ -457,7 +483,12 @@ function Editor({ initial }: { initial: CVDocument }) {
             <Preview svg={svg} />
           )}
 
-          <UpdateDialog />
+          <LibraryDialog
+            open={library}
+            onOpenChange={setLibrary}
+            currentId={record.id}
+            onSwitch={onSwitch}
+          />
           <StatusToast {...status} />
           <CompileErrorDialog error={error} />
         </main>
