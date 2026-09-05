@@ -85,7 +85,7 @@
 
 // ---------- body ----------
 #for s in t.sections {
-  section(s.label)
+  block(sticky: true, section(s.label))
   for it in s.items { render-item(it) }
   sectionsep
 }
