@@ -40,6 +40,7 @@ import { useCompiledCV } from "./typst/useCompiledCV";
 import { AboutDialog } from "./ui/AboutDialog";
 import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { ContactsEditor } from "./ui/ContactsEditor";
+import { CVList } from "./ui/CVList";
 import { DispatchCtx, useDispatch } from "./ui/dispatch";
 import { LibraryDialog } from "./ui/LibraryDialog";
 import {
@@ -67,26 +68,39 @@ function sampleDocument(): CVDocument {
 }
 
 function App() {
-  const booted = useBoot();
-  const [current, setCurrent] = useState<CVRecord | null>(null);
-  const record = current ?? booted;
+  const { record, setRecord, loading } = useBoot();
 
-  if (!record) {
+  const switchTo = (r: CVRecord | null) => {
+    if (r) {
+      void setCurrentId(r.id).catch((e) => {});
+    }
+    setRecord(r);
+  };
+
+  if (loading) {
     return (
       <div className="grid h-screen place-items-center text-sm text-muted-foreground">
         loading…
       </div>
     );
   }
+
+  if (!record) {
+    return <Welcome onPick={switchTo} />;
+  }
+
+  return <Editor key={record.id} record={record} onSwitch={switchTo} />;
+}
+
+/** no CV open — the way VS Code sits on a window with no folder */
+function Welcome({ onPick }: { onPick: (r: CVRecord | null) => void }) {
   return (
-    <Editor
-      key={record.id}
-      record={record}
-      onSwitch={(r) => {
-        void setCurrentId(r.id);
-        setCurrent(r);
-      }}
-    />
+    <div className="grid h-screen place-items-center p-6">
+      <div className="w-full max-w-lg space-y-4">
+        <h1 className="text-sm tracking-widest uppercase">Your CVs</h1>
+        <CVList currentId={null} onPick={onPick} />
+      </div>
+    </div>
   );
 }
 
@@ -145,6 +159,7 @@ function EditorTopbar({
   canUndo,
   canRedo,
   onOpenLibrary,
+  onCloseCV,
 }: {
   doc: CVDocument;
   dispatch: React.ActionDispatch<[a: Action]>;
@@ -155,6 +170,7 @@ function EditorTopbar({
   canUndo: boolean;
   canRedo: boolean;
   onOpenLibrary: () => void;
+  onCloseCV: () => void;
 }) {
   const replace = (make: () => CVDocument, prompt: string) => {
     if (window.confirm(prompt)) {
@@ -256,7 +272,9 @@ function EditorTopbar({
             <MenuItem onClick={() => exportDocument(doc)}>
               Export content.json
             </MenuItem>
+
             <MenuSeparator />
+
             <MenuItem
               onClick={() =>
                 replace(sampleDocument, "Replace this CV with the sample?")
@@ -264,9 +282,14 @@ function EditorTopbar({
             >
               Load the sample CV
             </MenuItem>
+
             <MenuSeparator />
+
             <MenuItem onClick={onOpenLibrary}>My CVs</MenuItem>
+            <MenuItem onClick={onCloseCV}>Close CV</MenuItem>
+
             <MenuSeparator />
+
             <MenuItem onClick={() => setAbout(true)}>About</MenuItem>
             <MenuItem
               className="text-destructive data-highlighted:bg-destructive data-highlighted:text-primary-foreground"
@@ -391,7 +414,7 @@ function Editor({
   onSwitch,
 }: {
   record: CVRecord;
-  onSwitch: (r: CVRecord) => void;
+  onSwitch: (r: CVRecord | null) => void;
 }) {
   const [library, setLibrary] = useState(false);
   const [tab, setTab] = useState<Tab>("write");
@@ -462,6 +485,7 @@ function Editor({
           canUndo={canUndo}
           canRedo={canRedo}
           onOpenLibrary={() => setLibrary(true)}
+          onCloseCV={() => onSwitch(null)}
         />
         <main className="relative min-h-0 flex-1">
           {wide ? (

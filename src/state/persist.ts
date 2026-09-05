@@ -163,23 +163,22 @@ async function boot(): Promise<CVRecord> {
     // the pointer outlived the record, fall through and start fresh
   }
 
-  const record =
-    plan.kind === "adopt"
-      ? {
-          id: newId(),
-          label: ADOPTED_LABEL,
-          updatedAt: Date.now(),
-          doc: plan.doc,
-        }
-      : newRecord();
+  if (plan.kind !== "adopt") {
+    // notjing to open, so open a welcome screen
+    return (await listRecords())[0] ?? null;
+  }
+
+  const record = {
+    id: newId(),
+    label: ADOPTED_LABEL,
+    updatedAt: Date.now(),
+    doc: plan.doc,
+  };
 
   await saveRecord(record);
   await setCurrentId(record.id);
-
-  if (plan.kind === "adopt") {
-    await idbDelete(LEGACY_DOC_KEY);
-    clearLegacy();
-  }
+  await idbDelete(LEGACY_DOC_KEY);
+  clearLegacy();
 
   return record;
 }
@@ -202,8 +201,9 @@ async function requestPersistence(): Promise<boolean> {
 
 /** null while the read is in flight — callers render a placeholder */
 
-export function useBoot(): CVRecord | null {
+export function useBoot() {
   const [record, setRecord] = useState<CVRecord | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -219,6 +219,7 @@ export function useBoot(): CVRecord | null {
         }
         void requestPersistence();
         setRecord(r);
+        setLoading(false);
       });
 
     return () => {
@@ -226,7 +227,7 @@ export function useBoot(): CVRecord | null {
     };
   }, []);
 
-  return record;
+  return { record, setRecord, loading };
 }
 
 export type SaveState = "saving" | "saved" | "failed";
