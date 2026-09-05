@@ -77,7 +77,7 @@ function App() {
 
   const switchTo = (r: CVRecord | null) => {
     if (r) {
-      void setCurrentId(r.id).catch((e) => {});
+      void setCurrentId(r.id).catch(() => {});
     }
     setRecord(r);
   };

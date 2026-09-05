@@ -2,6 +2,12 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status: complete.** All six tasks are committed (`a91161b` … `06ebcc2`);
+`pnpm test` is 48 green across five files. What was built differs from what is
+written below in several places — read **Deviations from the plan** at the end
+before treating any code block here as current. Outcomes are in `progress.md`
+M14.
+
 **Goal:** Keep many CVs in the app, switch between them, and search inside them.
 
 **Architecture:** A CV is today's `CVDocument` wrapped as a `CVRecord` and stored
@@ -923,7 +929,7 @@ git commit -m "add the My CVs dialog: switch, create, duplicate, rename, delete"
 **Interfaces:**
 - Consumes: `strings`, `tokenize`, `matches`, `hit`, `cut` from Task 2
 
-- [ ] **Step 1: Add the query state and the filter**
+- [x] **Step 1: Add the query state and the filter**
 
 Inside `LibraryDialog`, above the return:
 
@@ -945,7 +951,7 @@ Inside `LibraryDialog`, above the return:
 Add `useMemo` to the React import, and `cut`, `hit`, `matches`, `strings`,
 `tokenize` to the `@/state/library` import. Render `shown` instead of `records`.
 
-- [ ] **Step 2: Add the search input**
+- [x] **Step 2: Add the search input**
 
 Directly under `<DialogHeader>`:
 
@@ -958,7 +964,7 @@ Directly under `<DialogHeader>`:
         />
 ```
 
-- [ ] **Step 3: Add the snippet under each row**
+- [x] **Step 3: Add the snippet under each row**
 
 Add this component in the same file:
 
@@ -1030,12 +1036,12 @@ keeps its classes verbatim, and the snippet sits under it. Replace the whole
             </li>
 ```
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pnpm test && pnpm build && pnpm lint`
 Expected: all pass.
 
-- [ ] **Step 5: Manual check**
+- [x] **Step 5: Manual check**
 
 Run `pnpm dev` with at least two CVs whose bodies differ. Search a word that
 appears only in one CV's bullets — expect that CV alone, with a snippet showing
@@ -1044,7 +1050,7 @@ the sentence and the word marked. Search two words in different fields
 match with no snippet. Search `project` — expect it *not* to match everything,
 which is the `variant` skip from Task 2 doing its job.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/LibraryDialog.tsx

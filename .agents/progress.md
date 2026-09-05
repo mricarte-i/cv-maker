@@ -1092,6 +1092,12 @@ The whole set is 28 kB. The starter bolt was 9.5 kB on its own.
 
 - [ ] Zip: `cv.typ` + `content.json` + template + LICENSE + README
 - [x] Bare `content.json` round-trip
+- [ ] Export **every** CV at once — raised in priority by M14
+
+M14 changed the stakes here. The bare round trip exports the CV you have open;
+a library of thirty is a year of applications sitting behind one "clear site
+data", with no way out that does not mean opening and exporting each in turn.
+Spec §8. The per-document export is no longer the whole answer.
 
 ## Milestone 11 — first release ✅
 
@@ -1329,12 +1335,92 @@ helped users and still failed the check.
 
 ---
 
+## Milestone 14 — My CVs ✅
+
+Many CVs in one browser, switchable and searchable. 48 tests across five files,
+~330 ms — 18 of them new, and still no `fake-indexeddb`, no jsdom.
+
+- [x] `state/library.ts` — record type, ordering, labels, boot decision
+- [x] `state/library.ts` — content search: harvest, match, snippet
+- [x] `state/persist.ts` — records under their own keys, plus a `"currentId"` pointer
+- [x] `App.tsx` — the open CV, switched by remounting `Editor`
+- [x] `ui/CVList.tsx` — list, switch, create, duplicate, rename, delete, search
+- [x] a welcome screen for when no CV is open
+
+`SCHEMA_VERSION` stayed **3**. A CV is today's `CVDocument` wrapped as a
+`CVRecord` — `{ id, label, updatedAt, doc }` — so `schema/` and `typst/cv.typ`
+were never opened for this. Q3 predicted the wrapper would stay cheap. It did.
+
+### The M12 seam decided the design, not the other way round
+
+Every decision that wanted a test went in `library.ts`; every IndexedDB call
+stayed in `persist.ts`. That split is the only one that keeps the suite on bare
+node. `bootPlan(pointer, legacy)` *is* the migration — pure, four cases, six
+tests — and `boot()` is the twenty lines that carry it out. Testing a storage
+migration without a fake IndexedDB was the entire reason for putting the
+decision in a different file from the storage.
+
+### A fresh object every render is an autosave loop
+
+`useAutosave({ ...record, doc })` re-armed the debounce on every render: it set
+`"saving"`, the timer wrote and set `"saved"`, that re-render built a new
+object, and round it went — a 500 ms write loop bumping `updatedAt` while
+nobody touched the keyboard. It presents as a flickering status pill. It is an
+endless write. The argument is `useMemo`d on `[record, doc]`.
+
+The debounce needed a second fix for switching. `Editor` unmounts on switch and
+that cleanup clears the pending timer, so the last 500 ms of typing in the CV
+you were *leaving* got dropped. A flush in the unmount cleanup covers it, gated
+on a `dirty` ref — and the ref is what stops StrictMode's mount/unmount/mount
+from writing a spurious `updatedAt` on every dev reload.
+
+### `key={record.id}` is doing more work than it looks
+
+Remounting `Editor` re-initialises `useHistory`, so undo cannot cross a CV
+boundary, and it resets `useAutosave`'s `first` guard, so arriving at a CV does
+not immediately re-save it. Two correct behaviours nobody had to write.
+
+### The dialog was redundant a day after it was built
+
+`LibraryDialog` was the plan's answer for switching. Then the welcome screen
+grew the same list, and the clicks to switch turned out identical either way —
+menu → My CVs → open. The list moved to `ui/CVList.tsx`, shared by both shells,
+and the topbar menu went from seven items to four: "Start over" and "Load the
+sample CV" both replaced the open document *in place*, which is exactly what a
+library makes unnecessary. Dropping them removed the last irreversible
+content-wipe in the app.
+
+The spec's §3 step 3 is now wrong on purpose: with no CVs stored, `boot()`
+returns `null` and the welcome screen appears instead of a blank CV being minted
+behind the user's back. Closing a CV goes there too, even when others exist.
+
+### The CV that would not fit was a template bug
+
+Reported as "the compiled page is too long". It was two pages — stacked with no
+gap by the preview, so it read as one — with the LANGUAGES heading orphaned at
+the foot of page one and two lines alone on page two.
+
+`cv.typ` emitted `section()` as inline content at top level, so the template's
+own `#v(-5pt)` never applied: **35.3pt lost across six sections**, measured by
+probing `here().position()` at the last element — 70.91pt into page 2 as
+written, 35.58pt once wrapped. `block(sticky: true, section(s.label))` recovers
+the space *and* refuses to leave a heading as the last thing on a page. The
+bundled sample renders unchanged.
+
+Worth keeping: the compile reproduces outside the browser. Copy `cv.typ`,
+`public/typst/silver-dev-cv.typ` and an exported document as `content.json` into
+one directory, then `typst compile --root . --font-path public/fonts
+--ignore-system-fonts cv.typ` renders exactly what the app renders — fonts
+included, which is what makes page counts trustworthy.
+
+---
+
 ## Open questions
 
 | # | Question | Blocks | Status |
 |---|---|---|---|
 | 1 | `entry.variant` rendering | M4 | ✅ **resolved** — branch to `job`/`education`/`project`, not `twoline-item` |
 | 2 | Multi-language | — | leaning separate documents; `sys.inputs` available either way |
-| 3 | Multiple CVs vs one | M7 | ✅ **resolved** — one. A switcher needs doc-level `id`/`label` (a v3 migration), a `doc/replace` action, a flush-on-switch fix for the autosave debounce, and delete/rename/duplicate. M10's `content.json` round-trip covers the real use case (tailor a copy per application) for free. `CVDocument` is self-contained and versioned, so adding a library wrapper later stays cheap. |
+| 3 | Multiple CVs vs one | M7 | ✅ **resolved — many** (reopened, M14). The old answer was *one*, on the grounds that M10's `content.json` round trip covers tailoring a copy per application. It does not: a trip through the filesystem is not a switcher, and the real use is a dozen CVs maintained in parallel. Everything that answer said a library would need turned out to be needed — a doc-level `id`/`label`, delete/rename/duplicate, a flush for the autosave debounce on switch — but none of it cost a migration. `CVRecord` wraps an untouched `CVDocument` and `SCHEMA_VERSION` is still 3, exactly as the old answer predicted. |
 | 4 | Section labels free text or preset | M6 | ✅ **resolved** — free text |
 | 5 | Compile-on-keystroke on mobile | M6 | **desktop resolved yes** (~8 ms round trip). The hidden-pane compile is gone (M6.9) and the status toast now prints the round trip, and the app is now installed on a phone — so the number only needs reading off the toast, which nobody has reported yet. Use the deployed HTTPS site, not a LAN dev URL: see `newId` in M12. |
