@@ -48,7 +48,6 @@ import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { ContactsEditor } from "./ui/ContactsEditor";
 import { CVList } from "./ui/CVList";
 import { DispatchCtx, useDispatch } from "./ui/dispatch";
-import { LibraryDialog } from "./ui/LibraryDialog";
 import {
   MenuContent,
   MenuItem,
@@ -194,7 +193,6 @@ function EditorTopbar({
   redo,
   canUndo,
   canRedo,
-  onOpenLibrary,
   onCloseCV,
 }: {
   doc: CVDocument;
@@ -205,14 +203,8 @@ function EditorTopbar({
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  onOpenLibrary: () => void;
   onCloseCV: () => void;
 }) {
-  const replace = (make: () => CVDocument, prompt: string) => {
-    if (window.confirm(prompt)) {
-      dispatch({ type: "doc/replace", doc: make() });
-    }
-  };
   const [about, setAbout] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -310,34 +302,9 @@ function EditorTopbar({
             </MenuItem>
 
             <MenuSeparator />
-
-            <MenuItem
-              onClick={() =>
-                replace(sampleDocument, "Replace this CV with the sample?")
-              }
-            >
-              Load the sample CV
-            </MenuItem>
-
+            <MenuItem onClick={onCloseCV}>My CVs</MenuItem>
             <MenuSeparator />
-
-            <MenuItem onClick={onOpenLibrary}>My CVs</MenuItem>
-            <MenuItem onClick={onCloseCV}>Close CV</MenuItem>
-
-            <MenuSeparator />
-
             <MenuItem onClick={() => setAbout(true)}>About</MenuItem>
-            <MenuItem
-              className="text-destructive data-highlighted:bg-destructive data-highlighted:text-primary-foreground"
-              onClick={() =>
-                replace(
-                  emptyDocument,
-                  "Discard this CV and start over? This cannot be undone.",
-                )
-              }
-            >
-              Start over
-            </MenuItem>
           </MenuContent>
         </MenuRoot>
 
@@ -452,7 +419,6 @@ function Editor({
   record: CVRecord;
   onSwitch: (r: CVRecord | null) => void;
 }) {
-  const [library, setLibrary] = useState(false);
   const [tab, setTab] = useState<Tab>("write");
   const wide = useMediaQuery("(min-width: 768px)");
   const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(
@@ -520,7 +486,6 @@ function Editor({
           redo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
-          onOpenLibrary={() => setLibrary(true)}
           onCloseCV={() => onSwitch(null)}
         />
         <main className="relative min-h-0 flex-1">
@@ -545,12 +510,6 @@ function Editor({
             <Preview svg={svg} />
           )}
 
-          <LibraryDialog
-            open={library}
-            onOpenChange={setLibrary}
-            currentId={record.id}
-            onSwitch={onSwitch}
-          />
           <StatusToast {...status} />
           <CompileErrorDialog error={error} />
         </main>
