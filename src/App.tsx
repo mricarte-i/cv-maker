@@ -1,4 +1,17 @@
 import {
+  Download,
+  FileText,
+  LoaderCircle,
+  Monitor,
+  Moon,
+  MoreHorizontal,
+  PenLine,
+  Plus,
+  Redo2,
+  Sun,
+  Undo2,
+} from "lucide-react";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -7,15 +20,6 @@ import {
 } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import contentEn from "../sample/content-en.json?raw";
-import { parseDocument } from "./schema/parse";
-import { emptyDocument } from "./schema/factory";
-import type { CVDocument } from "./schema/cv";
-import { useAutosave, useStoredDocument } from "./state/persist";
-import { type Action } from "./state/reducer";
-import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
-import { useCompiledCV } from "./typst/useCompiledCV";
-import { DispatchCtx } from "./ui/dispatch";
-import { SectionEditor } from "./ui/SectionEditor";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import {
@@ -23,28 +27,27 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "./components/ui/resizable";
-import { ContactsEditor } from "./ui/ContactsEditor";
-import { Preview } from "./ui/Preview";
-import { SortableList } from "./ui/Sortable";
-import {
-  Monitor,
-  MoreHorizontal,
-  Moon,
-  Plus,
-  Sun,
-  Redo2,
-  Undo2,
-  FileText,
-  PenLine,
-  Download,
-  LoaderCircle,
-} from "lucide-react";
-import { StatusToast } from "./ui/StatusToast";
-import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { cn } from "./lib/utils";
-import { useTheme } from "./ui/theme";
-import { Rail, SLOTS } from "./ui/Row";
-import { useDispatch } from "./ui/dispatch";
+import type { CVDocument } from "./schema/cv";
+import { emptyDocument } from "./schema/factory";
+import { parseDocument } from "./schema/parse";
+import { useHistory } from "./state/history";
+import type { CVRecord } from "./state/library";
+import {
+  newRecord,
+  saveRecord,
+  setCurrentId,
+  useAutosave,
+  useBoot,
+} from "./state/persist";
+import { type Action } from "./state/reducer";
+import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
+import { useCompiledCV } from "./typst/useCompiledCV";
+import { AboutDialog } from "./ui/AboutDialog";
+import { CompileErrorDialog } from "./ui/CompileErrorDialog";
+import { ContactsEditor } from "./ui/ContactsEditor";
+import { CVList } from "./ui/CVList";
+import { DispatchCtx, useDispatch } from "./ui/dispatch";
 import {
   MenuContent,
   MenuItem,
@@ -52,9 +55,12 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "./ui/Menu";
-import { useHistory } from "./state/history";
-import { UpdateDialog } from "./ui/UpdateDialog";
-import { AboutDialog } from "./ui/AboutDialog";
+import { Preview } from "./ui/Preview";
+import { Rail, SLOTS } from "./ui/Row";
+import { SectionEditor } from "./ui/SectionEditor";
+import { SortableList } from "./ui/Sortable";
+import { StatusToast } from "./ui/StatusToast";
+import { useTheme } from "./ui/theme";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -67,16 +73,70 @@ function sampleDocument(): CVDocument {
 }
 
 function App() {
-  const initial = useStoredDocument();
+  const { record, setRecord, loading } = useBoot();
 
-  if (!initial) {
+  const switchTo = (r: CVRecord | null) => {
+    if (r) {
+      void setCurrentId(r.id).catch(() => {});
+    }
+    setRecord(r);
+  };
+
+  if (loading) {
     return (
       <div className="grid h-screen place-items-center text-sm text-muted-foreground">
         loading…
       </div>
     );
   }
-  return <Editor initial={initial} />;
+
+  if (!record) {
+    return <Welcome onPick={switchTo} />;
+  }
+
+  return <Editor key={record.id} record={record} onSwitch={switchTo} />;
+}
+
+/** no CV open — the way VS Code sits on a window with no folder */
+/** no CV open. the way VS Code sits on a window with no folder: what this is,
+    and everything you can open, on one screen */
+function Welcome({ onPick }: { onPick: (r: CVRecord | null) => void }) {
+  const startSample = () => {
+    const r = { ...newRecord("Sample CV"), doc: sampleDocument() };
+    void saveRecord(r).catch(() => {}); // in memory if storage is blocked
+    onPick(r);
+  };
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto grid max-w-4xl gap-10 px-6 py-16 md:grid-cols-2 md:items-start md:gap-16">
+        <section className="order-2 space-y-5 md:order-1">
+          {/* set in the face the PDF prints in — the wordmark is the sample */}
+          <h1 className="font-serif text-5xl leading-none tracking-tight sm:text-6xl">
+            CV Maker
+          </h1>
+          <p className="text-pencil max-w-[38ch] font-serif text-lg leading-relaxed">
+            Write a CV in your browser. typst.ts compiles it to PDF on your
+            machine + you can install it as a PWA!
+          </p>
+          <p className="text-pencil max-w-[38ch] font-serif text-lg leading-relaxed">
+            CVs you generate are yours. CV compilation and PDF generation is all
+            done on your machine, so no data leaves your device.
+          </p>
+          <Button size="xs" variant="ghost" onClick={startSample}>
+            Start from the sample
+          </Button>
+        </section>
+
+        <section className="order-1 space-y-3 md:order-2">
+          <h2 className="border-rule/40 border-b pb-2 text-sm tracking-widest uppercase">
+            Your CVs
+          </h2>
+          <CVList currentId={null} onPick={onPick} />
+        </section>
+      </div>
+    </div>
+  );
 }
 
 type Tab = "write" | "preview";
@@ -133,6 +193,7 @@ function EditorTopbar({
   redo,
   canUndo,
   canRedo,
+  onCloseCV,
 }: {
   doc: CVDocument;
   dispatch: React.ActionDispatch<[a: Action]>;
@@ -142,12 +203,8 @@ function EditorTopbar({
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onCloseCV: () => void;
 }) {
-  const replace = (make: () => CVDocument, prompt: string) => {
-    if (window.confirm(prompt)) {
-      dispatch({ type: "doc/replace", doc: make() });
-    }
-  };
   const [about, setAbout] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -243,27 +300,11 @@ function EditorTopbar({
             <MenuItem onClick={() => exportDocument(doc)}>
               Export content.json
             </MenuItem>
+
             <MenuSeparator />
-            <MenuItem
-              onClick={() =>
-                replace(sampleDocument, "Replace this CV with the sample?")
-              }
-            >
-              Load the sample CV
-            </MenuItem>
+            <MenuItem onClick={onCloseCV}>My CVs</MenuItem>
             <MenuSeparator />
             <MenuItem onClick={() => setAbout(true)}>About</MenuItem>
-            <MenuItem
-              className="text-destructive data-highlighted:bg-destructive data-highlighted:text-primary-foreground"
-              onClick={() =>
-                replace(
-                  emptyDocument,
-                  "Discard this CV and start over? This cannot be undone.",
-                )
-              }
-            >
-              Start over
-            </MenuItem>
           </MenuContent>
         </MenuRoot>
 
@@ -371,11 +412,22 @@ function EditorPane({ doc }: { doc: CVDocument }) {
 }
 
 /** mounts once the stored document has been read, so `initial` never changes */
-function Editor({ initial }: { initial: CVDocument }) {
+function Editor({
+  record,
+  onSwitch,
+}: {
+  record: CVRecord;
+  onSwitch: (r: CVRecord | null) => void;
+}) {
   const [tab, setTab] = useState<Tab>("write");
   const wide = useMediaQuery("(min-width: 768px)");
-  const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(initial);
-  const save = useAutosave(doc);
+  const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(
+    record.doc,
+  );
+  // a fresh object every render re-arms the debounce forever — autosave keys
+  // off identity, so give it one that only changes when the document does
+  const saved = useMemo(() => ({ ...record, doc }), [record, doc]);
+  const save = useAutosave(saved);
   // above md both panes are visible, so the preview is always active
   // below it, compiling when it isn't on screen doesn't make sense
   // and wastes the phone's battery
@@ -434,6 +486,7 @@ function Editor({ initial }: { initial: CVDocument }) {
           redo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
+          onCloseCV={() => onSwitch(null)}
         />
         <main className="relative min-h-0 flex-1">
           {wide ? (
@@ -457,7 +510,6 @@ function Editor({ initial }: { initial: CVDocument }) {
             <Preview svg={svg} />
           )}
 
-          <UpdateDialog />
           <StatusToast {...status} />
           <CompileErrorDialog error={error} />
         </main>
