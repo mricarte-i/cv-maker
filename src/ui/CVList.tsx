@@ -8,6 +8,7 @@ import {
   removeRecord,
   saveRecord,
 } from "@/state/persist";
+import { Copy, PenLine, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 /** the CVs and everything you can do to one. shared by the welcome screen and
@@ -78,13 +79,13 @@ export function CVList({
         {records.map((r) => (
           <li
             key={r.id}
-            className="group/row hover:bg-muted flex items-baseline gap-2 rounded-sm px-2 py-1"
+            className="group/row hover:bg-muted flex items-baseline gap-2 rounded-sm px-2 py-1.5"
           >
             <span className="text-pencil w-3 shrink-0 text-xs">
               {r.id === currentId ? "▸" : ""}
             </span>
             <Input
-              className="h-7 flex-1 border-b-transparent text-sm"
+              className="h-8 flex-1 border-b-transparent font-serif text-base md:text-base"
               defaultValue={r.label}
               aria-label="CV name"
               onBlur={(e) => void rename(r, e.target.value)}
@@ -93,24 +94,34 @@ export function CVList({
             <span className="text-pencil shrink-0 text-xs tabular-nums">
               {new Date(r.updatedAt).toLocaleDateString()}
             </span>
-            <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover/row:opacity-100 pointer-coarse:opacity-100">
-              <Button size="xs" variant="ghost" onClick={() => onPick(r)}>
-                open
+            <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                aria-label={`Open ${r.label}`}
+                title="Open"
+                onClick={() => onPick(r)}
+              >
+                <PenLine />
               </Button>
               <Button
-                size="xs"
+                size="icon-xs"
                 variant="ghost"
+                aria-label={`Duplicate ${r.label}`}
+                title="Duplicate"
                 onClick={() => void duplicate(r)}
               >
-                duplicate
+                <Copy />
               </Button>
               <Button
-                size="xs"
+                size="icon-xs"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={`Delete ${r.label}`}
+                title="Delete"
                 onClick={() => void destroy(r)}
               >
-                delete
+                <Trash2 />
               </Button>
             </div>
           </li>

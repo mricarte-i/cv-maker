@@ -33,7 +33,13 @@ import { emptyDocument } from "./schema/factory";
 import { parseDocument } from "./schema/parse";
 import { useHistory } from "./state/history";
 import type { CVRecord } from "./state/library";
-import { setCurrentId, useAutosave, useBoot } from "./state/persist";
+import {
+  newRecord,
+  saveRecord,
+  setCurrentId,
+  useAutosave,
+  useBoot,
+} from "./state/persist";
 import { type Action } from "./state/reducer";
 import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
 import { useCompiledCV } from "./typst/useCompiledCV";
@@ -93,12 +99,42 @@ function App() {
 }
 
 /** no CV open — the way VS Code sits on a window with no folder */
+/** no CV open. the way VS Code sits on a window with no folder: what this is,
+    and everything you can open, on one screen */
 function Welcome({ onPick }: { onPick: (r: CVRecord | null) => void }) {
+  const startSample = () => {
+    const r = { ...newRecord("Sample CV"), doc: sampleDocument() };
+    void saveRecord(r).catch(() => {}); // in memory if storage is blocked
+    onPick(r);
+  };
+
   return (
-    <div className="grid h-screen place-items-center p-6">
-      <div className="w-full max-w-lg space-y-4">
-        <h1 className="text-sm tracking-widest uppercase">Your CVs</h1>
-        <CVList currentId={null} onPick={onPick} />
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto grid max-w-4xl gap-10 px-6 py-16 md:grid-cols-2 md:items-start md:gap-16">
+        <section className="order-2 space-y-5 md:order-1">
+          {/* set in the face the PDF prints in — the wordmark is the sample */}
+          <h1 className="font-serif text-5xl leading-none tracking-tight sm:text-6xl">
+            CV Maker
+          </h1>
+          <p className="text-pencil max-w-[38ch] font-serif text-lg leading-relaxed">
+            Write a CV in your browser. typst.ts compiles it to PDF on your
+            machine + you can install it as a PWA!
+          </p>
+          <p className="text-pencil max-w-[38ch] font-serif text-lg leading-relaxed">
+            CVs you generate are yours. CV compilation and PDF generation is all
+            done on your machine, so no data leaves your device.
+          </p>
+          <Button size="xs" variant="ghost" onClick={startSample}>
+            Start from the sample
+          </Button>
+        </section>
+
+        <section className="order-1 space-y-3 md:order-2">
+          <h2 className="border-rule/40 border-b pb-2 text-sm tracking-widest uppercase">
+            Your CVs
+          </h2>
+          <CVList currentId={null} onPick={onPick} />
+        </section>
       </div>
     </div>
   );
