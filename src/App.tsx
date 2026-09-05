@@ -1,4 +1,17 @@
 import {
+  Download,
+  FileText,
+  LoaderCircle,
+  Monitor,
+  Moon,
+  MoreHorizontal,
+  PenLine,
+  Plus,
+  Redo2,
+  Sun,
+  Undo2,
+} from "lucide-react";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -7,15 +20,6 @@ import {
 } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import contentEn from "../sample/content-en.json?raw";
-import { parseDocument } from "./schema/parse";
-import { emptyDocument } from "./schema/factory";
-import type { CVDocument } from "./schema/cv";
-import { setCurrentId, useAutosave, useBoot } from "./state/persist";
-import { type Action } from "./state/reducer";
-import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
-import { useCompiledCV } from "./typst/useCompiledCV";
-import { DispatchCtx } from "./ui/dispatch";
-import { SectionEditor } from "./ui/SectionEditor";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import {
@@ -23,28 +27,21 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "./components/ui/resizable";
-import { ContactsEditor } from "./ui/ContactsEditor";
-import { Preview } from "./ui/Preview";
-import { SortableList } from "./ui/Sortable";
-import {
-  Monitor,
-  MoreHorizontal,
-  Moon,
-  Plus,
-  Sun,
-  Redo2,
-  Undo2,
-  FileText,
-  PenLine,
-  Download,
-  LoaderCircle,
-} from "lucide-react";
-import { StatusToast } from "./ui/StatusToast";
-import { CompileErrorDialog } from "./ui/CompileErrorDialog";
 import { cn } from "./lib/utils";
-import { useTheme } from "./ui/theme";
-import { Rail, SLOTS } from "./ui/Row";
-import { useDispatch } from "./ui/dispatch";
+import type { CVDocument } from "./schema/cv";
+import { emptyDocument } from "./schema/factory";
+import { parseDocument } from "./schema/parse";
+import { useHistory } from "./state/history";
+import type { CVRecord } from "./state/library";
+import { setCurrentId, useAutosave, useBoot } from "./state/persist";
+import { type Action } from "./state/reducer";
+import { downloadPdf, exportDocument, importDocument } from "./state/transfer";
+import { useCompiledCV } from "./typst/useCompiledCV";
+import { AboutDialog } from "./ui/AboutDialog";
+import { CompileErrorDialog } from "./ui/CompileErrorDialog";
+import { ContactsEditor } from "./ui/ContactsEditor";
+import { DispatchCtx, useDispatch } from "./ui/dispatch";
+import { LibraryDialog } from "./ui/LibraryDialog";
 import {
   MenuContent,
   MenuItem,
@@ -52,10 +49,12 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "./ui/Menu";
-import { useHistory } from "./state/history";
-import { AboutDialog } from "./ui/AboutDialog";
-import type { CVRecord } from "./state/library";
-import { LibraryDialog } from "./ui/LibraryDialog";
+import { Preview } from "./ui/Preview";
+import { Rail, SLOTS } from "./ui/Row";
+import { SectionEditor } from "./ui/SectionEditor";
+import { SortableList } from "./ui/Sortable";
+import { StatusToast } from "./ui/StatusToast";
+import { useTheme } from "./ui/theme";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
@@ -400,7 +399,10 @@ function Editor({
   const { doc, dispatch, undo, redo, canUndo, canRedo } = useHistory(
     record.doc,
   );
-  const save = useAutosave({ ...record, doc });
+  // a fresh object every render re-arms the debounce forever — autosave keys
+  // off identity, so give it one that only changes when the document does
+  const saved = useMemo(() => ({ ...record, doc }), [record, doc]);
+  const save = useAutosave(saved);
   // above md both panes are visible, so the preview is always active
   // below it, compiling when it isn't on screen doesn't make sense
   // and wastes the phone's battery
