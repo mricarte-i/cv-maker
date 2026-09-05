@@ -179,7 +179,7 @@ git commit -m "add library record type, ordering and boot decision"
   - `hit(fields: string[], token: string): string | null`
   - `cut(text: string, token: string, pad?: number): { before: string; match: string; after: string }`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `src/state/library.test.ts`:
 
@@ -279,12 +279,12 @@ test("cut does not put an ellipsis on an edge it did not trim", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run src/state/library.test.ts`
 Expected: FAIL — `strings`, `tokenize`, `matches`, `hit`, `cut` are not exported.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Append to `src/state/library.ts`:
 
@@ -327,12 +327,12 @@ export function cut(text: string, token: string, pad = 30) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm test`
 Expected: PASS, all files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/state/library.ts src/state/library.test.ts
@@ -360,7 +360,7 @@ git commit -m "add content search: harvest, token matching, snippet"
 No automated test: this is the IDB wrapper, deliberately on the untested side of
 the seam. Its decisions live in `library.ts` and were tested in Task 1.
 
-- [ ] **Step 1: Replace the key constants and record helpers**
+- [x] **Step 1: Replace the key constants and record helpers**
 
 In `src/state/persist.ts`, replace `const KEY = "current";` with:
 
@@ -369,7 +369,7 @@ const LEGACY_DOC_KEY = "current"; // pre-library: one bare CVDocument
 const POINTER = "currentId";
 ```
 
-- [ ] **Step 2: Make the IDB helpers take a key**
+- [x] **Step 2: Make the IDB helpers take a key**
 
 Replace `idbGet` and `idbPut` with keyed versions and add the two the library needs:
 
@@ -413,7 +413,7 @@ async function idbAll(): Promise<unknown[]> {
 }
 ```
 
-- [ ] **Step 3: Add record validation and the public operations**
+- [x] **Step 3: Add record validation and the public operations**
 
 `check()` already parses a `CVDocument` and discards anything invalid. Add a
 record-level wrapper beside it and the four operations:
@@ -455,7 +455,7 @@ Add `newId` to the existing import from `../schema/factory`, and import
 `idbAll()` returns the pointer string too; `checkRecord` rejects it, because a
 bare string is not an object. That is the filter, not an accident.
 
-- [ ] **Step 4: Replace `loadDoc` with the boot path**
+- [x] **Step 4: Replace `loadDoc` with the boot path**
 
 Replace `loadDoc()` and `useStoredDocument()` with:
 
@@ -527,7 +527,7 @@ function clearLegacy() {
 migration left the localStorage copy alone. `boot()` keeps that ordering:
 `clearLegacy()` runs only after `saveRecord` and `setCurrentId` have resolved.
 
-- [ ] **Step 5: Move `useAutosave` onto records, and flush on unmount**
+- [x] **Step 5: Move `useAutosave` onto records, and flush on unmount**
 
 Three changes. The signature and what it writes:
 
@@ -602,12 +602,12 @@ And a third effect, which is load-bearing for switching:
 This is spec §5 step 1. The remount gives history and autosave a clean start for
 free, but only this makes the outgoing document safe.
 
-- [ ] **Step 6: Verify it compiles and nothing regressed**
+- [x] **Step 6: Verify it compiles and nothing regressed**
 
 Run: `pnpm test && pnpm build`
 Expected: tests PASS; `tsc -b` fails only in `App.tsx`, which Task 4 fixes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/state/persist.ts
@@ -627,7 +627,7 @@ git commit -m "store CVs as records with a currentId pointer"
 - Produces: `Editor` takes `record: CVRecord`; `EditorTopbar` takes
   `onOpenLibrary: () => void`
 
-- [ ] **Step 1: Switch the root component to records**
+- [x] **Step 1: Switch the root component to records**
 
 Replace the body of `App()`:
 
@@ -660,7 +660,7 @@ function App() {
 }
 ```
 
-- [ ] **Step 2: Thread the record through `Editor`**
+- [x] **Step 2: Thread the record through `Editor`**
 
 In `Editor`, change the props and the two lines that consume them:
 
@@ -680,7 +680,7 @@ function Editor({
 `{ ...record, doc }` is what makes autosave write the edited document under this
 CV's id while keeping its label.
 
-- [ ] **Step 3: Add the menu item and mount the dialog**
+- [x] **Step 3: Add the menu item and mount the dialog**
 
 In `EditorTopbar`, accept `onOpenLibrary: () => void` and add an item above
 `About`:
@@ -702,7 +702,7 @@ In `Editor`'s JSX, pass `onOpenLibrary={() => setLibrary(true)}` to
           />
 ```
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `pnpm test && pnpm build && pnpm lint`
 Task 5 creates the real `LibraryDialog`. To make *this* task compile on its
@@ -722,13 +722,13 @@ export function LibraryDialog(_: {
 }
 ```
 
-- [ ] **Step 5: Manual check**
+- [x] **Step 5: Manual check**
 
 Run `pnpm dev`. Expected: the existing CV loads exactly as before, edits still
 autosave, and DevTools → Application → IndexedDB → `cv-maker` → `docs` shows a
 `currentId` string plus one record keyed by a uuid, with `current` gone.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/App.tsx src/ui/LibraryDialog.tsx
@@ -747,7 +747,7 @@ git commit -m "hold the current CV in App, switch by remounting Editor"
   Task 3; `byRecent`, `copyLabel`, `CVRecord` from Task 1
 - Produces: `LibraryDialog({ open, onOpenChange, currentId, onSwitch })`
 
-- [ ] **Step 1: Build the list**
+- [x] **Step 1: Build the list**
 
 ```tsx
 import { useEffect, useState } from "react";
@@ -893,12 +893,12 @@ export function LibraryDialog({
 }
 ```
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 Run: `pnpm test && pnpm build && pnpm lint`
 Expected: all pass.
 
-- [ ] **Step 3: Manual check**
+- [x] **Step 3: Manual check**
 
 Run `pnpm dev` and, in order: create a CV, type a name into it, reopen the
 dialog and confirm it sorted to the top; duplicate one and confirm the copy is
@@ -906,7 +906,7 @@ independent (edit it, check the original did not change); rename one and reopen
 to confirm it stuck; delete a non-current one; delete the current one and
 confirm you land in another CV rather than a blank screen.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/LibraryDialog.tsx
@@ -1050,6 +1050,57 @@ which is the `variant` skip from Task 2 doing its job.
 git add src/ui/LibraryDialog.tsx
 git commit -m "search inside CVs, with the matching line shown"
 ```
+
+---
+
+## Deviations from the plan
+
+Recorded as built, not as specified. Tasks 1–5 are committed.
+
+**Task 3 — `persist.ts`.** `check()` is `checkDocument()` and early-returns on
+`undefined`: `boot()` reads `LEGACY_DOC_KEY` unconditionally, so without the
+guard every clean install logs "saved document rejected" on first boot.
+`removeRecord` takes a `CVRecord`, not an id. `useBoot()` returns
+`{ record, setRecord, loading }` rather than `CVRecord | null` — `loading` and
+"nothing stored" render differently once the welcome screen exists — and it
+catches a rejected `boot()`, because the plan's version left a blocked
+IndexedDB stuck on "loading…" forever where `loadDoc` used to fall back.
+
+**Task 4 — `App.tsx`.** `useAutosave({ ...record, doc })` builds a new object
+every render, which re-fires the `[record]` effect: it set "saving", the timer
+wrote and set "saved", and that re-render started it again — an endless 500 ms
+write loop bumping `updatedAt` while idle. The argument is memoised. `App` has
+no `current` state; `useBoot` owns the record.
+
+**Task 5 — the list.** The list and its mutations live in `src/ui/CVList.tsx`,
+shared by the dialog and the welcome screen; `LibraryDialog` was reduced to the
+dialog shell. Row actions are icon buttons — the text buttons reserved ~200px
+of every row even at `opacity-0`, which is what squeezed the name field.
+
+## After Task 5, unplanned
+
+- **No-CV state.** `boot()` may return `null`, and `App` renders a welcome
+  screen instead of minting a blank CV. Closing a CV goes there even when other
+  CVs exist. This contradicts spec §3 step 3 ("Neither → `emptyDocument()`
+  under a fresh id"), which needs updating; `BootPlan`'s `"create"` now means
+  "nothing to open".
+- **Welcome as a landing page**, carrying the CV list and a non-destructive
+  "Start from the sample".
+- **Menu cut from 7 items to 4.** "Start over" and "Load the sample CV" both
+  replaced the open document in place — the library and the welcome screen do
+  both jobs without destroying anything. "My CVs" and "Close CV" merged.
+  `LibraryDialog` is no longer mounted.
+- **Typst orphan fix** (`92a82f8`, outside this plan's scope, which says
+  `cv.typ` is untouched). `section()` was emitted inline, so the template's own
+  `v(-5pt)` never applied - 35.3pt lost across 6 sections, measured — and
+  headings could be orphaned from their content. `block(sticky: true, …)` fixes
+  both; verified against `content-bug.json` (2 pages → 1) and the bundled
+  sample (1 page, unchanged).
+
+**Task 6 is retargeted.** The search goes in `src/ui/CVList.tsx`, not
+`LibraryDialog.tsx`, and both the welcome screen and the dialog get it. Step 3's
+`<li>` rewrite is stale: the row already uses icon buttons, so keep the existing
+row markup and only wrap it in a column with `<Snippet>` beneath.
 
 ---
 
