@@ -11,6 +11,9 @@
     "url": "git+https://github.com/mricarte-i/cv-maker.git"
   },
   "packageManager": "pnpm@10.26.1",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "generate-pwa-assets": "pwa-assets-generator",
     "dev": "vite",
