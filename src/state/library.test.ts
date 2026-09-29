@@ -6,7 +6,9 @@ import {
   copyLabel,
   cut,
   hit,
+  importLabel,
   matches,
+  NEW_LABEL,
   strings,
   tokenize,
   type CVRecord,
@@ -156,4 +158,23 @@ test("cut does not put an ellipsis on an edge it did not trim", () => {
 
   expect(c.before).toBe("");
   expect(c.after).toBe("");
+});
+
+test("an imported CV is named after the file it came from", () => {
+  expect(importLabel("frontend.json")).toBe("frontend");
+  expect(importLabel("my cv (2).json")).toBe("my cv (2)");
+});
+
+test("the extension goes whatever case it is in", () => {
+  expect(importLabel("cv.JSON")).toBe("cv");
+});
+
+test("a file with no name of its own falls back to the new-CV label", () => {
+  expect(importLabel(".json")).toBe(NEW_LABEL);
+  expect(importLabel("   .json")).toBe(NEW_LABEL);
+  expect(importLabel("")).toBe(NEW_LABEL);
+});
+
+test("a file with no extension keeps its whole name", () => {
+  expect(importLabel("content")).toBe("content");
 });

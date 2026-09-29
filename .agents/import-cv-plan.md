@@ -63,7 +63,7 @@ Task 1; the rest are manual checks in Task 2 Step 4, because they live in
 - Consumes: `NEW_LABEL` from the existing `library.ts`
 - Produces: `importLabel(filename: string): string`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `src/state/library.test.ts`, and add `importLabel` and `NEW_LABEL` to
 the existing `./library.ts` import:
@@ -89,12 +89,12 @@ test("a file with no extension keeps its whole name", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run src/state/library.test.ts`
 Expected: FAIL — `importLabel is not a function`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Append to `src/state/library.ts`:
 
@@ -107,7 +107,7 @@ export const importLabel = (filename: string): string =>
   filename.replace(/\.json$/i, "").trim() || NEW_LABEL;
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm test`
 Expected: PASS, 52 tests across five files.
@@ -115,7 +115,7 @@ Expected: PASS, 52 tests across five files.
 Then `pnpm build`. Vitest does not typecheck, so a green suite can still hide a
 `noUnusedLocals` error in the test file. CI runs both.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/state/library.ts src/state/library.test.ts
