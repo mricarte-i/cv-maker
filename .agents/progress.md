@@ -1346,6 +1346,8 @@ Many CVs in one browser, switchable and searchable. 48 tests across five files,
 - [x] `App.tsx` — the open CV, switched by remounting `Editor`
 - [x] `ui/CVList.tsx` — list, switch, create, duplicate, rename, delete, search
 - [x] a welcome screen for when no CV is open
+- [x] `ui/CVList.tsx` — import a `content.json` as a new CV
+      ([import-cv-plan.md](import-cv-plan.md))
 
 `SCHEMA_VERSION` stayed **3**. A CV is today's `CVDocument` wrapped as a
 `CVRecord` — `{ id, label, updatedAt, doc }` — so `schema/` and `typst/cv.typ`
@@ -1412,6 +1414,52 @@ Worth keeping: the compile reproduces outside the browser. Copy `cv.typ`,
 one directory, then `typst compile --root . --font-path public/fonts
 --ignore-system-fonts cv.typ` renders exactly what the app renders — fonts
 included, which is what makes page counts trustworthy.
+
+### Import makes a new CV (import-cv-plan.md)
+
+Picking a `content.json` from the list makes a **new** CV with a fresh `id` and
+a label taken from the filename. It never replaces the open one, so there is no
+confirm.
+
+- [x] Task 1 — `importLabel(filename)` in `library.ts`, four tests (`7de9ea8`).
+      Suite is now **52** across five files.
+- [x] Task 2 — handler, button and hidden `<input type="file">` in `CVList.tsx`
+      (`9518007`), with `e.target.value` reset so picking the same file twice
+      still fires. `pnpm test`, `build` and `lint` pass (lint has only the two
+      existing `only-export-components` warnings). Manual checks done: an
+      exported CV re-imported, the same file twice, the v1
+      `sample/content-en.json`, and `{"hello":1}`.
+
+**Deviation:** the button reads "Import CV from content file", not the plan's
+"Import content.json", so it no longer matches the topbar's wording.
+
+The topbar's own "Import content.json" is now the odd one out: it still
+overwrites the open CV, and is the last import that does. Worth deciding
+whether it should stay, since the menu was cut from seven items to four for
+exactly that reason.
+
+---
+
+## Milestone 15 — typing lag 🚧
+
+Plan: [typing-lag-plan.md](typing-lag-plan.md).
+
+A fast burst of typing falls behind the keyboard: characters keep landing after
+your hands have left the keys. **It's React, not the compile.** The compile
+already runs in a worker behind a 200 ms debounce, so more debouncing changes
+nothing. Every keystroke re-renders the whole editor tree, because nothing in
+`src/` is memoised, and `StrictMode` doubles that in dev.
+
+The fix spends what immer already provides. `produce` gives new objects only
+along the edited path, so `memo` on `SectionEditor`, `ContactsEditor` and
+`ItemEditor` skips everything the keystroke didn't touch. The one trap is
+`SectionEditor` passing a fresh `ListRef` to `ItemEditor` on every render,
+which would defeat that `memo` without any error.
+
+- [ ] reducer test pinning that untouched branches keep their identity
+- [ ] `memo` on `SectionEditor` and `ContactsEditor`
+- [ ] `memo` on `ItemEditor`, with a `useMemo`'d `parent`
+- [ ] by hand: render highlighting, the burst in dev and preview, focus hand-off
 
 ---
 

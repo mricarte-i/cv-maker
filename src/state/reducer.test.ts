@@ -182,4 +182,25 @@ describe("patches", () => {
       expect(reducer(d0, a), a.type).toBe(d0);
     }
   });
+
+  test("an edit leaves every untouched branch the same object", () => {
+    // two sections, the first with two items — the fixture has one of each
+    const setup: Action[] = [
+      { type: "item/duplicate", sectionId: "s1", index: 0 },
+      { type: "section/duplicate", index: 0 },
+    ];
+    const d0 = setup.reduce(reducer, doc());
+
+    const d1 = reducer(d0, {
+      type: "bullet/update",
+      blockId: "blk1",
+      index: 0,
+      text: "uno",
+    });
+
+    expect(d1.sections[0]).not.toBe(d0.sections[0]); // the path that changed
+    expect(d1.sections[0].items[1]).toBe(d0.sections[0].items[1]);
+    expect(d1.sections[1]).toBe(d0.sections[1]);
+    expect(d1.contacts).toBe(d0.contacts);
+  });
 });
