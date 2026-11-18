@@ -135,7 +135,7 @@ git commit -m "name an imported CV after its file"
 - Produces: nothing new. The button lands in `CVList`, so the welcome screen and
   the My CVs dialog both get it from one change.
 
-- [ ] **Step 1: Add the imports**
+- [x] **Step 1: Add the imports**
 
 In `src/ui/CVList.tsx`, add `importLabel` to the existing `@/state/library`
 import, `useRef` to the `react` import, and:
@@ -147,7 +147,7 @@ import { importDocument } from "@/state/transfer";
 `transfer.ts` pulls in the typst client, which builds a Worker at module scope —
 that is already in the bundle via `App.tsx`, so this costs nothing new.
 
-- [ ] **Step 2: Add the handler**
+- [x] **Step 2: Add the handler**
 
 Inside `CVList`, beside the other actions:
 
@@ -175,7 +175,7 @@ Inside `CVList`, beside the other actions:
   };
 ```
 
-- [ ] **Step 3: Add the button and the input**
+- [x] **Step 3: Add the button and the input**
 
 Replace the action row at the bottom of the returned fragment:
 
@@ -202,7 +202,7 @@ Replace the action row at the bottom of the returned fragment:
       />
 ```
 
-- [ ] **Step 4: Verify, then check the four things tests cannot**
+- [x] **Step 4: Verify, then check the four things tests cannot**
 
 Run: `pnpm test && pnpm build && pnpm lint`
 Expected: all pass.
@@ -219,7 +219,7 @@ Then `pnpm dev`, and from the welcome screen:
 4. Import a file containing `{"hello":1}`. Expect one alert naming the failure
    and **no new row** in the list.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/CVList.tsx

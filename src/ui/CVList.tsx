@@ -5,6 +5,7 @@ import {
   copyLabel,
   cut,
   hit,
+  importLabel,
   matches,
   strings,
   tokenize,
@@ -16,8 +17,9 @@ import {
   removeRecord,
   saveRecord,
 } from "@/state/persist";
+import { importDocument } from "@/state/transfer";
 import { Copy, PenLine, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /** the CVs and everything you can do to one. shared by the welcome screen and
     the My CVs dialog, which differ only in the shell around it */
@@ -43,6 +45,28 @@ export function CVList({
     const r = newRecord();
     await saveRecord(r).catch(() => {}); // in memory if storage is blocked
     onPick(r);
+  };
+
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const importFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // so re-picking the same file fires change again
+    if (!file) {
+      return;
+    }
+
+    const r = await importDocument(file);
+    if (!r.ok) {
+      window.alert(`Could not import that file.\n\n${r.error}`);
+      return;
+    }
+
+    // a fresh id: the imported document knows nothing about this library, and
+    // spec §2 says re-minting on import is the point
+    const record = { ...newRecord(importLabel(file.name)), doc: r.doc };
+    await saveRecord(record).catch(() => {}); // in memory if storage is blocked
+    onPick(record);
   };
 
   const duplicate = async (r: CVRecord) => {
@@ -168,11 +192,26 @@ export function CVList({
         ))}
       </ul>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-1">
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={() => fileInput.current?.click()}
+        >
+          Import CV from content file
+        </Button>
         <Button size="xs" onClick={() => void create()}>
           New CV
         </Button>
       </div>
+
+      <input
+        ref={fileInput}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => void importFile(e)}
+      />
     </>
   );
 }
