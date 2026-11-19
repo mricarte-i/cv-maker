@@ -1,10 +1,11 @@
-import type { ListRef } from "@/state/navigate";
-import type { Contact } from "../schema/cv";
-import { cn } from "@/lib/utils";
-import { useDispatch } from "./dispatch";
 import { Input } from "@/components/ui/input";
-import { DragHandle, RowMenu, SortableList } from "./Sortable";
+import { cn } from "@/lib/utils";
+import type { ListRef } from "@/state/navigate";
+import { memo } from "react";
+import type { Contact } from "../schema/cv";
 import { AddButton, FIELD, LABEL, Mark, Row, SLOTS, TEXT } from "./Row";
+import { DragHandle, RowMenu, SortableList } from "./Sortable";
+import { useDispatch } from "./dispatch";
 import { focusAfterRender, rowKey, useFocusClaim } from "./focus";
 
 const CONTACTS: ListRef = { kind: "contacts" };
@@ -69,7 +70,11 @@ function ContactRow({
   );
 }
 
-export function ContactsEditor({ contacts }: { contacts: Contact[] }) {
+export const ContactsEditor = memo(function ContactsEditor({
+  contacts,
+}: {
+  contacts: Contact[];
+}) {
   const dispatch = useDispatch();
 
   return (
@@ -85,4 +90,4 @@ export function ContactsEditor({ contacts }: { contacts: Contact[] }) {
       </div>
     </div>
   );
-}
+});

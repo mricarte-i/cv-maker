@@ -1,13 +1,13 @@
+import { Input } from "@/components/ui/input";
 import type { Item, Section } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import { useDispatch } from "./dispatch";
 import { ItemEditor, MARK } from "./ItemEditor";
-import { Input } from "@/components/ui/input";
-import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { Rail } from "./Row";
+import { DragHandle, RowMenu, SortableList } from "./Sortable";
 
-import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { memo, useState } from "react";
 import { AddMenu } from "./Menu";
 
 const SUMMARY_LIMIT = 8;
@@ -32,7 +32,7 @@ function Summary({ items }: { items: Item[] }) {
   );
 }
 
-export function SectionEditor({
+export const SectionEditor = memo(function SectionEditor({
   section,
   index,
 }: {
@@ -113,4 +113,4 @@ export function SectionEditor({
       )}
     </div>
   );
-}
+});

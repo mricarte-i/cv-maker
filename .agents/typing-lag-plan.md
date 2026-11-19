@@ -64,7 +64,7 @@ This test passes as soon as it's written. That's intended: it pins existing
 immer behaviour that the rest of the plan depends on. If a future reducer change
 deep-clones the document, this test fails before the editor gets slow again.
 
-- [ ] **Step 1: Add the test**
+- [x] **Step 1: Add the test**
 
 Inside `describe("patches", …)`, after the last test: below line 184, above
 the `});` that closes the `describe` on line 185:
@@ -92,13 +92,13 @@ the `});` that closes the `describe` on line 185:
   });
 ```
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `pnpm exec vitest run src/state/reducer.test.ts`
 Expected: PASS. If it fails, stop: something is cloning branches it doesn't
 need to, and `memo` won't help until that's fixed.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/state/reducer.test.ts
@@ -117,7 +117,7 @@ git commit -m "pin that an edit keeps untouched branches by identity"
 `ContactsEditor` takes `contacts` (immer-stable). Neither needs anything else
 before `memo` works.
 
-- [ ] **Step 1: `SectionEditor.tsx`**
+- [x] **Step 1: `SectionEditor.tsx`**
 
 Line 9:
 ```tsx
@@ -136,7 +136,7 @@ Line 116, the function's closing brace:
 
 (`useMemo` is for Task 3. Import it now so the line only changes once.)
 
-- [ ] **Step 2: `ContactsEditor.tsx`**
+- [x] **Step 2: `ContactsEditor.tsx`**
 
 Add an import:
 ```tsx
@@ -154,13 +154,13 @@ export const ContactsEditor = memo(function ContactsEditor({
 
 and its closing brace (the file's last line) becomes `});`.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `pnpm test && pnpm build && pnpm lint`
 Expected: all pass. `build` is the one that matters: it typechecks the
 `memo(function …)` wrappers.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/SectionEditor.tsx src/ui/ContactsEditor.tsx
