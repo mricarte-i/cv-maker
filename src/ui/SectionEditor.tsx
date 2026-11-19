@@ -7,7 +7,7 @@ import { Rail } from "./Row";
 import { DragHandle, RowMenu, SortableList } from "./Sortable";
 
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { AddMenu } from "./Menu";
 
 const SUMMARY_LIMIT = 8;
@@ -41,7 +41,11 @@ export const SectionEditor = memo(function SectionEditor({
 }) {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(true);
-  const items: ListRef = { kind: "items", sectionId: section.id };
+  // ItemEditor is memoised on this as `parent` — a fresh object would defeat it
+  const items = useMemo<ListRef>(
+    () => ({ kind: "items", sectionId: section.id }),
+    [section.id],
+  );
   const bodyId = `section-body-${section.id}`;
   const name = section.label || `section ${index + 1}`;
 

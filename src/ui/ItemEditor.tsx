@@ -1,15 +1,15 @@
-import { Fragment } from "react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Fragment, memo } from "react";
 import type { Block, EntryVariant, Item } from "../schema/cv";
 import type { ListRef } from "../state/navigate";
 import type { EntryPatch } from "../state/reducer";
-import { useDispatch } from "./dispatch";
 import { BlockEditor } from "./BlockEditor";
-import { Input } from "@/components/ui/input";
+import { useDispatch } from "./dispatch";
+import { AddMenu } from "./Menu";
+import { Chip, FIELD, LABEL, META, Mark, Rail, Row, SLOTS, TEXT } from "./Row";
 import { DragHandle, RowMenu, SortableList } from "./Sortable";
 import { TagsInput } from "./TagsInput";
-import { Chip, FIELD, LABEL, META, Mark, Rail, Row, TEXT, SLOTS } from "./Row";
-import { AddMenu } from "./Menu";
 
 type Field = "title" | "subtitle" | "date" | "location";
 
@@ -170,7 +170,7 @@ function Shell({
   );
 }
 
-export function ItemEditor({
+export const ItemEditor = memo(function ItemEditor({
   item,
   parent,
   index,
@@ -325,4 +325,4 @@ export function ItemEditor({
       );
     }
   }
-}
+});

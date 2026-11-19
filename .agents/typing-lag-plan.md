@@ -178,7 +178,7 @@ git commit -m "skip re-rendering sections and contacts a keystroke didn't touch"
 After Task 2, typing re-renders only the section you're in, but still every
 item in it. Experience is the longest section and the one most often edited.
 
-- [ ] **Step 1: stabilise `items` in `SectionEditor.tsx`**
+- [x] **Step 1: stabilise `items` in `SectionEditor.tsx`**
 
 Line 44:
 ```tsx
@@ -189,7 +189,7 @@ Line 44:
   );
 ```
 
-- [ ] **Step 2: `ItemEditor.tsx`**
+- [x] **Step 2: `ItemEditor.tsx`**
 
 Line 1:
 ```tsx
@@ -206,13 +206,13 @@ Line 328, the function's closing brace:
 });
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `pnpm test && pnpm build && pnpm lint`
 Expected: all pass. The existing `only-export-components` warning on
 `ItemEditor.tsx` (from `MARK`) is unchanged.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/SectionEditor.tsx src/ui/ItemEditor.tsx
