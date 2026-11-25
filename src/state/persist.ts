@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import contentEn from "../../sample/content-en.json";
 import type { CVDocument } from "../schema/cv";
 import { emptyDocument, newId } from "../schema/factory";
 import { parseDocument } from "../schema/parse";
@@ -6,6 +7,7 @@ import {
   ADOPTED_LABEL,
   bootPlan,
   byRecent,
+  EXAMPLE_LABEL,
   NEW_LABEL,
   type CVRecord,
 } from "./library";
@@ -147,6 +149,8 @@ export const saveRecord = (r: CVRecord) => idbPut(r.id, r);
 export const removeRecord = (r: CVRecord) => idbDelete(r.id);
 export const setCurrentId = (id: string) => idbPut(POINTER, id);
 
+let booting: Promise<CVRecord> | null = null; // StrictMode double-mounts boot
+
 async function boot(): Promise<CVRecord> {
   const legacyLocal = readLegacy(); // localStorage
   const pointer = await idbGet(POINTER);
@@ -164,8 +168,16 @@ async function boot(): Promise<CVRecord> {
   }
 
   if (plan.kind !== "adopt") {
-    // notjing to open, so open a welcome screen
-    return (await listRecords())[0] ?? null;
+    // nothing to open, so open a welcome screen
+    const first = (await listRecords())[0] ?? null;
+    // first visit: no pointer and no CVs yet, so seed the example. it goes
+    // into the list, but nothing opens, so the welcome screen still shows
+    const example =
+      plan.kind === "create" && !first && checkDocument(contentEn);
+    if (example) {
+      await saveRecord({ ...newRecord(EXAMPLE_LABEL), doc: example });
+    }
+    return first;
   }
 
   const record = {
@@ -207,7 +219,8 @@ export function useBoot() {
 
   useEffect(() => {
     let alive = true;
-    void boot()
+    // check for a boot in progress, helps when StrictMode is enabled
+    void (booting ??= boot())
       .catch((e) => {
         console.warn("indexexdDB unavailable, edits will not be saved", e);
         const doc = readLegacy();

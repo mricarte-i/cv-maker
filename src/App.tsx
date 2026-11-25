@@ -19,7 +19,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import contentEn from "../sample/content-en.json?raw";
+import loremIpsum from "../sample/lore-m-ipsum.json?raw";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import {
@@ -64,7 +64,7 @@ import { useTheme } from "./ui/theme";
 
 /** the seed fixture is no longer the boot default — it is reachable on demand */
 function sampleDocument(): CVDocument {
-  const r = parseDocument(JSON.parse(contentEn));
+  const r = parseDocument(JSON.parse(loremIpsum));
   if (!r.ok) {
     console.warn(`sample document rejected:\n${r.error}`);
     return emptyDocument();
@@ -123,7 +123,7 @@ function Welcome({ onPick }: { onPick: (r: CVRecord | null) => void }) {
             CVs you generate are yours. CV compilation and PDF generation is all
             done on your machine, so no data leaves your device.
           </p>
-          <Button size="xs" variant="ghost" onClick={startSample}>
+          <Button size="xs" variant="secondary" onClick={startSample}>
             Start from the sample
           </Button>
         </section>

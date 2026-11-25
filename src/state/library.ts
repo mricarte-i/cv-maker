@@ -9,6 +9,7 @@ export type CVRecord = {
 
 export const NEW_LABEL = "Untitled CV";
 export const ADOPTED_LABEL = "My CV";
+export const EXAMPLE_LABEL = ";)";
 // when importing a content file, the CV is named after the file
 export const importLabel = (filename: string): string =>
   filename.replace(/\.json$/i, "").trim() || NEW_LABEL;

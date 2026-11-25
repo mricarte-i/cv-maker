@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CVDocument } from "../schema/cv";
 import { compileCv, initCompiler, type Diagnostic } from "./client";
 
-const DEBOUNCE_MS = 5000;
+const DEBOUNCE_MS = 250;
 
 type CompileState = {
   svg: string; // last good render; "" until the first success

@@ -9,6 +9,7 @@ lerna-debug.log*
 
 sample/
 !sample/content-en.json
+!sample/lore-m-ipsum.json
 
 node_modules
 dist
