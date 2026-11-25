@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 3,
+  "name": "Lore M. Ipsum",
+  "address": "Buenos Aires, Argentina",
+  "date": "2026-08-31",
+  "contacts": [
+    {
+      "id": "9fcb4c7c-c0cc-4956-a41e-288136523d6d",
+      "text": "portfolio",
+      "link": "https://matiasricarte.com"
+    },
+    {
+      "id": "c-linkedin",
+      "text": "LinkedIn",
+      "link": "https://linkedin.com/in/sample/"
+    },
+    {
+      "id": "c-github",
+      "text": "GitHub",
+      "link": "https://github.com/mricarte-i"
+    },
+    {
+      "id": "c-email",
+      "text": "mail",
+      "link": "mailto:hola@example.com"
+    }
+  ],
+  "sections": [
+    {
+      "id": "s-about",
+      "label": "About Me",
+      "items": [
+        {
+          "kind": "prose",
+          "id": "i-about",
+          "body": [
+            {
+              "kind": "paragraph",
+              "id": "b-about",
+              "text": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s-experience",
+      "label": "Experience",
+      "items": [
+        {
+          "kind": "entry",
+          "id": "i-flowics",
+          "variant": "job",
+          "title": "Latest job title",
+          "subtitle": "Workplace",
+          "date": "2021 - 2026",
+          "location": "Country place",
+          "body": [
+            {
+              "kind": "paragraph",
+              "id": "b-flowics-intro",
+              "text": "quick description "
+            },
+            {
+              "kind": "bullets",
+              "id": "b-flowics-bullets",
+              "items": [
+                {
+                  "id": "c90b64e4-f3b6-43f2-8dff-8f1a34e64ce2",
+                  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit"
+                },
+                {
+                  "id": "2c1b14fe-cdbd-4dd1-b0b6-95dd5916ef8b",
+                  "text": "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+                },
+                {
+                  "id": "9cbc3c38-2a6a-4ad7-b5b4-f2bd06737d7b",
+                  "text": "Ut enim ad minim veniam"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "entry",
+          "id": "e6260491-35fb-4ca8-8f32-f30937320c3a",
+          "variant": "job",
+          "title": "Previous job title",
+          "subtitle": "Workplace",
+          "date": "2017 - 2021",
+          "location": "Country place",
+          "body": [
+            {
+              "kind": "paragraph",
+              "id": "c8264f89-f262-45ca-883a-ba3e69e9bdb3",
+              "text": "quick description "
+            },
+            {
+              "kind": "bullets",
+              "id": "6fff9db3-2038-4b83-b671-efe6e9cc0ff2",
+              "items": [
+                {
+                  "id": "5daa3da0-2646-462e-bfbf-4f3ba8edeb9d",
+                  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit"
+                },
+                {
+                  "id": "391d5cce-122d-4cfe-b490-4c6295336b29",
+                  "text": "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+                },
+                {
+                  "id": "8531b265-f815-470d-b3a2-6a497efc2e59",
+                  "text": "Ut enim ad minim veniam"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s-skills",
+      "label": "Skills",
+      "items": [
+        {
+          "kind": "tags",
+          "id": "i-skills",
+          "title": "Skills",
+          "items": [
+            {
+              "id": "fecdfbbe-b6e6-4dc3-b187-471114cacef3",
+              "text": "Works good"
+            },
+            {
+              "id": "de549a43-8434-4b65-aa4e-4e24b095d993",
+              "text": "Works smart"
+            },
+            {
+              "id": "5870bf38-3fae-45b9-82af-0f375b027ec7",
+              "text": "Works hard"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s-projects",
+      "label": "Projects",
+      "items": [
+        {
+          "kind": "entry",
+          "id": "i-3dscene",
+          "variant": "project",
+          "title": "Personal project #1",
+          "subtitle": "",
+          "date": "2025",
+          "location": "",
+          "body": [
+            {
+              "kind": "bullets",
+              "id": "b-3dscene",
+              "items": [
+                {
+                  "id": "97cf7264-1717-476b-af77-ae4b7a91f242",
+                  "text": "Sed ut perspiciatis unde omnis iste natus"
+                },
+                {
+                  "id": "46e0f283-b49e-492f-a992-4db80d63b154",
+                  "text": "error sit voluptatem accusantium doloremque laudantium"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "entry",
+          "id": "i-dnd",
+          "variant": "project",
+          "title": "Personal project #2",
+          "subtitle": "",
+          "date": "2021",
+          "location": "",
+          "body": [
+            {
+              "kind": "bullets",
+              "id": "b-dnd",
+              "items": [
+                {
+                  "id": "8070cd0a-5a07-4187-a2a7-c10327e9fce7",
+                  "text": "totam rem aperiam"
+                },
+                {
+                  "id": "32a4741e-6c8e-4a26-9ed7-ab739a8088f7",
+                  "text": "eaque ipsa quae ab illo inventore veritatis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s-languages",
+      "label": "Languages",
+      "items": [
+        {
+          "kind": "oneline",
+          "id": "i-spanish",
+          "title": "Spanish",
+          "content": "Native"
+        },
+        {
+          "kind": "oneline",
+          "id": "i-english",
+          "title": "English",
+          "content": "Fluent"
+        }
+      ]
+    },
+    {
+      "id": "s-education",
+      "label": "Education",
+      "items": [
+        {
+          "kind": "entry",
+          "id": "i-itba",
+          "variant": "education",
+          "title": "Institute",
+          "subtitle": "Major major",
+          "date": "2017 - 2027",
+          "location": "Countryplace",
+          "body": [
+            {
+              "kind": "bullets",
+              "id": "c9fb205f-60fd-4c32-adb8-e7cbef55f8c4",
+              "items": [
+                {
+                  "id": "dac5b70a-5a01-4412-92b9-d60596d1b84d",
+                  "text": "related course"
+                },
+                {
+                  "id": "0936da01-8be5-4650-9f08-f826dbe220de",
+                  "text": "another related course"
+                },
+                {
+                  "id": "d42b515f-c508-4568-8ea2-087bec2f2d59",
+                  "text": "this course surely has something to do with the job requirements"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

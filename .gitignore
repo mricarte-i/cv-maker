@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-sample/
+sample/*
 !sample/content-en.json
 !sample/lore-m-ipsum.json
 
